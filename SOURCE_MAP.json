@@ -1,0 +1,773 @@
+[
+  {
+    "file": "original/racetrack_interpolation_demo.py",
+    "lines": 428,
+    "sha256": "3cee29a45b771a7a00fca1345103f38ffd90d8a7fd79eaf95f59888b5c8682c8",
+    "definitions": [
+      {
+        "name": "load_track",
+        "kind": "function",
+        "start_line": 47,
+        "end_line": 64
+      },
+      {
+        "name": "Curve",
+        "kind": "class",
+        "start_line": 68,
+        "end_line": 88,
+        "methods": [
+          {
+            "name": "__call__",
+            "start_line": 74,
+            "end_line": 80
+          },
+          {
+            "name": "curvature",
+            "start_line": 82,
+            "end_line": 88
+          }
+        ]
+      },
+      {
+        "name": "smoothing_factor",
+        "kind": "function",
+        "start_line": 91,
+        "end_line": 111
+      },
+      {
+        "name": "make_curve",
+        "kind": "function",
+        "start_line": 114,
+        "end_line": 141
+      },
+      {
+        "name": "wrap_angle",
+        "kind": "function",
+        "start_line": 144,
+        "end_line": 145
+      },
+      {
+        "name": "seam_and_knots",
+        "kind": "function",
+        "start_line": 148,
+        "end_line": 161
+      },
+      {
+        "name": "json_clean",
+        "kind": "function",
+        "start_line": 164,
+        "end_line": 171
+      },
+      {
+        "name": "write_csv",
+        "kind": "function",
+        "start_line": 174,
+        "end_line": 177
+      },
+      {
+        "name": "PeriodicTrack",
+        "kind": "class",
+        "start_line": 180,
+        "end_line": 272,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 189,
+            "end_line": 206
+          },
+          {
+            "name": "sample",
+            "start_line": 208,
+            "end_line": 219
+          },
+          {
+            "name": "project",
+            "start_line": 221,
+            "end_line": 239
+          },
+          {
+            "name": "export",
+            "start_line": 241,
+            "end_line": 272
+          }
+        ]
+      },
+      {
+        "name": "run_experiment",
+        "kind": "function",
+        "start_line": 275,
+        "end_line": 376
+      },
+      {
+        "name": "plot_results",
+        "kind": "function",
+        "start_line": 379,
+        "end_line": 411
+      },
+      {
+        "name": "main",
+        "kind": "function",
+        "start_line": 414,
+        "end_line": 426
+      }
+    ]
+  },
+  {
+    "file": "tracklab/__init__.py",
+    "lines": 9,
+    "sha256": "2975cfcc51f9766e803533bea405d2e1ec21d97733580ad60e2c61672e460005",
+    "definitions": []
+  },
+  {
+    "file": "tracklab/__main__.py",
+    "lines": 4,
+    "sha256": "3129adff95e0f38b87ab34cddfc27082c7892bcaec267ff5d40f160fdf55b44a",
+    "definitions": []
+  },
+  {
+    "file": "tracklab/adapter.py",
+    "lines": 146,
+    "sha256": "bf8ac012dd08b299cbaa7c98801285c5063ab206c79884c7039282aab125ec00",
+    "definitions": [
+      {
+        "name": "PlanarState",
+        "kind": "class",
+        "start_line": 21,
+        "end_line": 37,
+        "methods": [
+          {
+            "name": "__post_init__",
+            "start_line": 30,
+            "end_line": 33
+          },
+          {
+            "name": "xy",
+            "start_line": 36,
+            "end_line": 37
+          }
+        ]
+      },
+      {
+        "name": "WheelGeometry",
+        "kind": "class",
+        "start_line": 41,
+        "end_line": 64,
+        "methods": [
+          {
+            "name": "__post_init__",
+            "start_line": 52,
+            "end_line": 56
+          },
+          {
+            "name": "body_positions",
+            "start_line": 58,
+            "end_line": 64
+          }
+        ]
+      },
+      {
+        "name": "RoadCarAdapter",
+        "kind": "class",
+        "start_line": 67,
+        "end_line": 146,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 69,
+            "end_line": 73
+          },
+          {
+            "name": "observe",
+            "start_line": 75,
+            "end_line": 94
+          },
+          {
+            "name": "frenet_rates",
+            "start_line": 96,
+            "end_line": 119
+          },
+          {
+            "name": "wheel_positions",
+            "start_line": 121,
+            "end_line": 124
+          },
+          {
+            "name": "wheel_environment",
+            "start_line": 126,
+            "end_line": 146
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "tracklab/cli.py",
+    "lines": 22,
+    "sha256": "0d0bf906e900bbe8b279e125eca5ebbef8f09ea2e198952c8213928a3d1364dd",
+    "definitions": [
+      {
+        "name": "main",
+        "kind": "function",
+        "start_line": 10,
+        "end_line": 22
+      }
+    ]
+  },
+  {
+    "file": "tracklab/data.py",
+    "lines": 52,
+    "sha256": "b8b0119e83338ec53d1359ac66c73cd37d4e54bf0f36cdc434fcf609ff21aa49",
+    "definitions": [
+      {
+        "name": "load_track",
+        "kind": "function",
+        "start_line": 15,
+        "end_line": 32
+      },
+      {
+        "name": "TrackData",
+        "kind": "class",
+        "start_line": 36,
+        "end_line": 52,
+        "methods": [
+          {
+            "name": "from_csv",
+            "start_line": 43,
+            "end_line": 44
+          },
+          {
+            "name": "xy",
+            "start_line": 47,
+            "end_line": 48
+          },
+          {
+            "name": "widths_right_left",
+            "start_line": 51,
+            "end_line": 52
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "tracklab/evaluation.py",
+    "lines": 174,
+    "sha256": "f5e3f24cf761716324baa6001830fb98d4f5159127c81872b86af2deb0e29d06",
+    "definitions": [
+      {
+        "name": "seam_and_knots",
+        "kind": "function",
+        "start_line": 23,
+        "end_line": 36
+      },
+      {
+        "name": "evaluate_reconstruction",
+        "kind": "function",
+        "start_line": 38,
+        "end_line": 80
+      },
+      {
+        "name": "evaluate_noise",
+        "kind": "function",
+        "start_line": 82,
+        "end_line": 108
+      },
+      {
+        "name": "validate_original_properties",
+        "kind": "function",
+        "start_line": 110,
+        "end_line": 128
+      },
+      {
+        "name": "run_experiment",
+        "kind": "function",
+        "start_line": 130,
+        "end_line": 174
+      }
+    ]
+  },
+  {
+    "file": "tracklab/export.py",
+    "lines": 60,
+    "sha256": "f2957e3e17a8d21415bd868d754b43316b1a2ed57b6e3ef4a5db19c79b110f1a",
+    "definitions": [
+      {
+        "name": "json_clean",
+        "kind": "function",
+        "start_line": 15,
+        "end_line": 22
+      },
+      {
+        "name": "write_csv",
+        "kind": "function",
+        "start_line": 24,
+        "end_line": 27
+      },
+      {
+        "name": "export_road",
+        "kind": "function",
+        "start_line": 29,
+        "end_line": 60
+      }
+    ]
+  },
+  {
+    "file": "tracklab/geometry.py",
+    "lines": 70,
+    "sha256": "46e9bb6b29c524c3d8a77deb519df541508a88b99ece710b7a922c9a1a967da9",
+    "definitions": [
+      {
+        "name": "wrap_angle",
+        "kind": "function",
+        "start_line": 10,
+        "end_line": 11
+      },
+      {
+        "name": "local_frame",
+        "kind": "function",
+        "start_line": 14,
+        "end_line": 33
+      },
+      {
+        "name": "ArcLengthMap",
+        "kind": "class",
+        "start_line": 37,
+        "end_line": 70,
+        "methods": [
+          {
+            "name": "build",
+            "start_line": 51,
+            "end_line": 67
+          },
+          {
+            "name": "to_parameter",
+            "start_line": 69,
+            "end_line": 70
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "tracklab/interpolation.py",
+    "lines": 97,
+    "sha256": "e9c2b3e02caedb95daedc262940a2f0e2d83724270214b395c0a0a74fb4e4f38",
+    "definitions": [
+      {
+        "name": "Curve",
+        "kind": "class",
+        "start_line": 26,
+        "end_line": 46,
+        "methods": [
+          {
+            "name": "__call__",
+            "start_line": 32,
+            "end_line": 38
+          },
+          {
+            "name": "curvature",
+            "start_line": 40,
+            "end_line": 46
+          }
+        ]
+      },
+      {
+        "name": "smoothing_factor",
+        "kind": "function",
+        "start_line": 48,
+        "end_line": 68
+      },
+      {
+        "name": "make_curve",
+        "kind": "function",
+        "start_line": 70,
+        "end_line": 97
+      }
+    ]
+  },
+  {
+    "file": "tracklab/plotting.py",
+    "lines": 40,
+    "sha256": "47b27e1cd3837f091066d6cb38c74ef4012a5d8e94d08c9189eda49b48b8076d",
+    "definitions": [
+      {
+        "name": "plot_results",
+        "kind": "function",
+        "start_line": 8,
+        "end_line": 40
+      }
+    ]
+  },
+  {
+    "file": "tracklab/road.py",
+    "lines": 104,
+    "sha256": "5f2c83577d5e8385abac2a9c94dd75cb08d2bc2b8558f1df0056da034f4eb080",
+    "definitions": [
+      {
+        "name": "WidthProfile",
+        "kind": "class",
+        "start_line": 20,
+        "end_line": 27,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 22,
+            "end_line": 24
+          },
+          {
+            "name": "__call__",
+            "start_line": 26,
+            "end_line": 27
+          }
+        ]
+      },
+      {
+        "name": "PeriodicTrack",
+        "kind": "class",
+        "start_line": 30,
+        "end_line": 104,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 37,
+            "end_line": 54
+          },
+          {
+            "name": "sample_geometry",
+            "start_line": 56,
+            "end_line": 70
+          },
+          {
+            "name": "sample",
+            "start_line": 72,
+            "end_line": 81
+          },
+          {
+            "name": "project",
+            "start_line": 83,
+            "end_line": 101
+          },
+          {
+            "name": "export",
+            "start_line": 103,
+            "end_line": 104
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "tracklab/surface.py",
+    "lines": 37,
+    "sha256": "428f7b0ac5953987209a2e24e8059258603008e4f37deece8a87f8acb6ec3799",
+    "definitions": [
+      {
+        "name": "SurfaceModel",
+        "kind": "class",
+        "start_line": 13,
+        "end_line": 16,
+        "methods": [
+          {
+            "name": "sample_xy",
+            "start_line": 14,
+            "end_line": 16
+          }
+        ]
+      },
+      {
+        "name": "FlatSurface",
+        "kind": "class",
+        "start_line": 20,
+        "end_line": 37,
+        "methods": [
+          {
+            "name": "__post_init__",
+            "start_line": 25,
+            "end_line": 29
+          },
+          {
+            "name": "sample_xy",
+            "start_line": 31,
+            "end_line": 37
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "examples/export_road_only.py",
+    "lines": 12,
+    "sha256": "0697745c28dd97f0f69517d7372d68d0cc5d9869b4af480ef9f706d6b888a816",
+    "definitions": []
+  },
+  {
+    "file": "examples/query_and_adapter.py",
+    "lines": 30,
+    "sha256": "a8e808890750d97afdad37fbadbb1dbfa429bcf8522ec9da0f31d82d80969eea",
+    "definitions": []
+  },
+  {
+    "file": "tests/test_components.py",
+    "lines": 171,
+    "sha256": "d5ab6c5f69e110eb508ac507a398978f06306bbfd4feb1c6ca321b700baa9a13",
+    "definitions": [
+      {
+        "name": "ComponentsTest",
+        "kind": "class",
+        "start_line": 21,
+        "end_line": 167,
+        "methods": [
+          {
+            "name": "setUpClass",
+            "start_line": 23,
+            "end_line": 26
+          },
+          {
+            "name": "test_loader_same_arrays",
+            "start_line": 28,
+            "end_line": 33
+          },
+          {
+            "name": "test_all_methods_match_original_all_phases",
+            "start_line": 35,
+            "end_line": 46
+          },
+          {
+            "name": "test_sample_matches_original_cubic_and_quintic",
+            "start_line": 48,
+            "end_line": 57
+          },
+          {
+            "name": "test_projection_matches_original_and_keeps_lap",
+            "start_line": 59,
+            "end_line": 66
+          },
+          {
+            "name": "test_frames_orthonormal",
+            "start_line": 68,
+            "end_line": 72
+          },
+          {
+            "name": "test_boundary_offsets",
+            "start_line": 74,
+            "end_line": 79
+          },
+          {
+            "name": "test_periodic_queries",
+            "start_line": 81,
+            "end_line": 92
+          },
+          {
+            "name": "test_arc_length_roundtrip",
+            "start_line": 94,
+            "end_line": 97
+          },
+          {
+            "name": "test_linear_curvature_not_zero_certificate",
+            "start_line": 99,
+            "end_line": 101
+          },
+          {
+            "name": "test_smoothing_zero_matches_cubic",
+            "start_line": 103,
+            "end_line": 107
+          },
+          {
+            "name": "test_surface_separate_from_geometry",
+            "start_line": 109,
+            "end_line": 114
+          },
+          {
+            "name": "test_disallow_unvalidated_smoothing_in_road",
+            "start_line": 116,
+            "end_line": 118
+          },
+          {
+            "name": "test_nonfinite_station_rejected",
+            "start_line": 120,
+            "end_line": 122
+          },
+          {
+            "name": "test_loader_rejects_nonpositive_width",
+            "start_line": 124,
+            "end_line": 128
+          },
+          {
+            "name": "test_export_equivalence",
+            "start_line": 130,
+            "end_line": 137
+          },
+          {
+            "name": "test_adapter_observation_and_rates",
+            "start_line": 139,
+            "end_line": 151
+          },
+          {
+            "name": "test_wheel_positions_rotation_and_order",
+            "start_line": 153,
+            "end_line": 161
+          },
+          {
+            "name": "test_frenet_singularity_rejected",
+            "start_line": 163,
+            "end_line": 167
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "validation/check_regression.py",
+    "lines": 52,
+    "sha256": "1f968188268ec671368962fd0d174df20348dceeded13cf542ce2c423acf42e8",
+    "definitions": []
+  },
+  {
+    "file": "original/earlier_car_example_1.py",
+    "lines": 853,
+    "sha256": "32e4e548fb185a00ef7110d221364962e66125e693b2d723c346aaa436997638",
+    "definitions": [
+      {
+        "name": "CarParams",
+        "kind": "class",
+        "start_line": 101,
+        "end_line": 146,
+        "methods": [
+          {
+            "name": "lr",
+            "start_line": 141,
+            "end_line": 142
+          },
+          {
+            "name": "enclosing_radius",
+            "start_line": 145,
+            "end_line": 146
+          }
+        ]
+      },
+      {
+        "name": "Road",
+        "kind": "class",
+        "start_line": 150,
+        "end_line": 197,
+        "methods": [
+          {
+            "name": "length",
+            "start_line": 162,
+            "end_line": 163
+          },
+          {
+            "name": "half_width",
+            "start_line": 166,
+            "end_line": 167
+          },
+          {
+            "name": "slope_bound",
+            "start_line": 170,
+            "end_line": 171
+          },
+          {
+            "name": "center",
+            "start_line": 173,
+            "end_line": 178
+          },
+          {
+            "name": "slope",
+            "start_line": 180,
+            "end_line": 186
+          },
+          {
+            "name": "friction",
+            "start_line": 188,
+            "end_line": 194
+          },
+          {
+            "name": "height",
+            "start_line": 196,
+            "end_line": 197
+          }
+        ]
+      },
+      {
+        "name": "VehicleModel",
+        "kind": "class",
+        "start_line": 200,
+        "end_line": 351,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 208,
+            "end_line": 220
+          },
+          {
+            "name": "_tire",
+            "start_line": 222,
+            "end_line": 235
+          },
+          {
+            "name": "_build",
+            "start_line": 237,
+            "end_line": 324
+          },
+          {
+            "name": "initial_state",
+            "start_line": 326,
+            "end_line": 331
+          },
+          {
+            "name": "make_step",
+            "start_line": 333,
+            "end_line": 351
+          }
+        ]
+      },
+      {
+        "name": "MinimumTimeMPC",
+        "kind": "class",
+        "start_line": 354,
+        "end_line": 439,
+        "methods": [
+          {
+            "name": "__init__",
+            "start_line": 356,
+            "end_line": 361
+          },
+          {
+            "name": "guess",
+            "start_line": 363,
+            "end_line": 390
+          },
+          {
+            "name": "solve",
+            "start_line": 392,
+            "end_line": 439
+          }
+        ]
+      },
+      {
+        "name": "self_test",
+        "kind": "function",
+        "start_line": 442,
+        "end_line": 490
+      },
+      {
+        "name": "simulate",
+        "kind": "function",
+        "start_line": 493,
+        "end_line": 590
+      },
+      {
+        "name": "plot_results",
+        "kind": "function",
+        "start_line": 593,
+        "end_line": 618
+      },
+      {
+        "name": "main",
+        "kind": "function",
+        "start_line": 621,
+        "end_line": 643
+      }
+    ]
+  }
+]

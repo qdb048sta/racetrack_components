@@ -1,0 +1,6 @@
+Data attribution
+================
+Norisring.csv: TUMFTM/racetrack-database; contact listed by upstream: Alexander Heilmeier.
+Original centerline provenance: OpenStreetMap contributors. Upstream describes satellite-image-derived widths and prior centerline smoothing.
+Upstream repository identifies its license as GNU LGPL v3. Copies of LGPL v3 and GPL v3 are included in licenses/.
+Source URLs and date are recorded in SOURCES.md. The analysis code and output are newly created for this case study; they are not official TUM simulation output. Derived geometry retains the source-data attribution. No survey accuracy, road safety, vehicle validation or controller certification is asserted.

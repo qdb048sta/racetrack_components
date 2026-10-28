@@ -1,0 +1,209 @@
+# Source walkthrough: from a CSV to a continuous road API
+
+## 1. Two independent purposes in the old file
+
+The original script serves two purposes:
+
+1. An **offline experiment**: hold out positions, fit seven models, evaluate reconstruction, derivative jumps, noise sensitivity and timings.
+2. A **road service**: fit all points with a chosen periodic spline, then answer position, tangent, curvature, width, boundary and projection queries.
+
+Neither purpose computes a steering command, tire force, vehicle-state update or optimized lap. In particular, `run_experiment()` does not choose the best method and automatically install it into `PeriodicTrack`. Original line 336 explicitly constructs the default all-point cubic road.
+
+### Original code map
+
+| Original lines | Name | Inputs -> output |
+|---|---|---|
+| 47-64 | `load_track` | CSV -> data array, chord stations `u`, polyline period `U` |
+| 67-88 | `Curve` | fitted backend -> callable values/derivatives/curvature |
+| 91-111 | `smoothing_factor` | stations, period, lambda -> factored positive-definite system |
+| 114-141 | `make_curve` | method name + samples -> `Curve` |
+| 148-161 | `seam_and_knots` | curve + knot stations -> numerical jump diagnostics |
+| 180-206 | `PeriodicTrack` construction | all source points -> fitted road and arc-length maps |
+| 208-219 | `sample` | distance around reference -> geometry/surface dictionary |
+| 221-239 | `project` | global 2D point + optional prior progress -> local reference station/offset |
+| 241-272 | `export` | fitted road -> approximately 1 m samples, coefficients and diagnostics |
+| 275-376 | `run_experiment` | source + settings -> benchmark files, all-point road export, provenance |
+| 379-411 | `plot_results` | saved benchmark arrays -> three figures |
+| 414-428 | `main` | command-line options -> orchestration |
+
+`Curve` is a dataclass: its constructor stores `implementation`, `origin`, `period`, `method`. `PeriodicTrack` holds other fitted objects. Most of the remaining operations are functions rather than classes because they do not need to retain independent state.
+
+## 2. Naming and shape traps
+
+- `u` in this script is a **road station parameter**, not a vehicle control vector.
+- `make_curve(method, x, y, period)` uses `x` for increasing parameter samples and `y` for the output matrix. Here `x` is NOT the world's x-coordinate; `y` is NOT only the world's y-coordinate.
+- For centerline fitting, `y.shape == (n, 2)` contains world x and y.
+- For width fitting, the same factory receives an `(n, 2)` matrix containing right and left widths.
+- `curve(u, 1)` means derivative with respect to u, not vehicle velocity.
+- The norm called `speed` in geometric calculations is `||dc/du||`, not metres per second of the car.
+
+For a scalar station, position/tangent/normal have shape `(2,)`, and scalar fields are NumPy scalar arrays. For a one-dimensional vector of M stations, vector fields have shape `(M,2)` and scalar fields have shape `(M,)`.
+
+## 3. Loader and fitted-curve layer
+
+The loader accepts at least eight finite rows with at least four columns, uses the first four, removes a repeated final point when its widths agree with the first row, rejects nonpositive widths and adjacent duplicate coordinates, and checks that the closing gap is not grossly larger than normal point spacing. These checks do not certify physical map accuracy or global nonintersection.
+
+It computes closed chord distances
+
+    d_i = ||p_(i+1 mod n) - p_i||,
+    u_0 = 0, u_i = sum_(j<i) d_j, U = sum_i d_i.
+
+The factory's branches are unchanged:
+
+| Strategy | Actual constructor/operation |
+|---|---|
+| linear | `make_interp_spline(..., k=1)` |
+| periodic cubic | `CubicSpline(..., bc_type='periodic')` |
+| periodic quintic | `make_interp_spline(..., k=5, bc_type='periodic')` |
+| cyclic PCHIP | `PchipInterpolator` with three cyclic neighboring samples on each side |
+| cyclic Akima | `Akima1DInterpolator(..., method='akima')` with cyclic padding |
+| cyclic Makima | `Akima1DInterpolator(..., method='makima')` with cyclic padding |
+| periodic smoothing cubic | solve fitted nodal values, then periodic `CubicSpline` |
+
+`Curve.__call__` maps any query to `origin + (u-origin) mod period`, then calls the fitted backend with the requested derivative order. This wrapping allows the same evaluation code for every strategy. Padding is separately needed to construct consistent endpoint slopes for the C1 methods. Wrapping alone cannot fix bad endpoint slopes.
+
+For nonlinear curves the signed curvature is
+
+    (x' y'' - y' x'') / (x'^2+y'^2)^(3/2).
+
+It is undefined at a degenerate tangent. For piecewise linear curves the program deliberately returns NaN for the curvature field, rather than representing an entire polygon as zero-curvature road.
+
+## 4. Why the road uses this form
+
+A closed circuit cannot usually be represented by one function `Y=f(X)`: it doubles back in X. A parametric reference `c(u)=(x(u),y(u))` remains meaningful throughout the ordered lap. `PeriodicTrack` adds right/left scalar width profiles to that reference, rather than trying to make a full 3D terrain mesh.
+
+After fitting, chord station u is not exactly arc distance. `ArcLengthMap` calculates
+
+    s(u)=integral_0^u ||c'(v)|| dv
+
+using eight subintervals per source interval and five Gauss points per subinterval. For 460 source intervals, there are 3,680 integration subintervals, 18,400 Gauss evaluations and 3,681 stored arc-grid endpoints. PCHIP fits the forward/inverse lookup maps. These are numerical approximations, not an exact analytic reparameterization.
+
+At a distance s, `sample_geometry()` performs:
+
+    wrap s -> inverse arc lookup u -> curve position and derivatives
+           -> tangent and normal -> widths -> boundaries.
+
+With `t=c'/||c'||` and `n=(-t_y,t_x)`, the boundaries are
+
+    left = center + width_left * n,
+    right = center - width_right * n.
+
+The sign convention is relative to increasing reference station. These are reconstructed normal offsets, not independent surveyed edges. Moving the reference by smoothing while keeping these widths unchanged can move the represented physical road; this is why smoothing is benchmarked but excluded from the reusable road constructor.
+
+`sample()` then adds assumed surface values. In the refactor, `sample_geometry()` and `SurfaceModel.sample_xy()` can be used separately.
+
+## 5. What the evaluation actually measures
+
+### Held-out positions
+
+For stride 4 and 460 rows, retain indices `phase, phase+4, ...` for each phase 0,1,2,3. Each fit uses 115 points and predicts the other 345. Aggregation contains 1,380 predictions, not 1,380 independent survey observations: each source point is held out in three phases.
+
+For each predicted source point:
+
+    e_i = ||c_hat(u_i) - p_i||,
+    RMSE = sqrt(mean(e_i^2)).
+
+The program also records the 95th-percentile Euclidean distance, maximum error, and error on fitted knots. These are known-station positional errors, not shortest distances to the curve. All u labels were computed from the complete source before positions were withheld. The benchmark therefore does not recover missing station coordinates and does not establish survey accuracy.
+
+Per phase it samples 20,000 parameter values for derivative/curvature diagnostics and a dense polyline length. This length estimate is separate from the higher-order arc quadrature used by `PeriodicTrack`.
+
+### Join and seam checks
+
+At each fitted knot it evaluates just before and just after the knot, using epsilon = minimum fitted knot spacing * 1e-7. It compares wrapped heading differences and curvature differences. It records the largest jump and a separate seam jump in `phase_details.csv`. Finite-epsilon checks estimate one-sided limits; they are not exact symbolic continuity proofs. The linear case has no finite curvature-jump metric.
+
+### Noise
+
+At every source station add independent Gaussian coordinate noise of standard deviation 0.2 m; use 10 trials with seed 20261027. The position target is the original source. Exact interpolants all reproduce their noisy input, so the same node error is expected for those methods. This tests the effect of smoothing, not their comparative prediction error between unseen noisy nodes.
+
+Curvature is compared at source-interval midpoints against the unperturbed all-point cubic. That is a numerical reference choice, not known physical curvature. Lambda=100 m^3 is fixed, not cross-validated.
+
+### Cost and correctness checks
+
+Record median time of five fits and nine batches of 10,000 position queries. Do not compare this to a full MPC solve or real-time deployment budget: projection, derivatives, controller and tire evaluation are absent from these timings.
+
+Self-checks compare cubic power and B-spline representations, lambda=0 smoothing against interpolation, unit tangents, positive widths, and selected projection examples.
+
+### Three distinct discretizations
+
+1. Source data spacing: about 5 m.
+2. Held-out fitting experiment: about 20 m between retained samples.
+3. Export: about 1 m along the all-point fitted reference.
+
+None of these is automatically the controller's time step or shooting mesh.
+
+## 6. Example road query (executed)
+
+For s=100 m on the default all-point road:
+
+| Field | Value |
+|---|---|
+| Source parameter u | 99.9966308215 m |
+| Center | (83.8538215703, -53.0210920450) m |
+| Tangent | (0.7364491505, -0.6764929037) |
+| Left normal | (0.6764929037, 0.7364491505) |
+| Heading | -0.7429899844 rad |
+| Signed curvature | -0.0119164390 1/m |
+| Right width | 6.8988084218 m |
+| Left width | 7.4511915782 m |
+| Modeled friction multiplier | 1 |
+| Modeled height | 0 m |
+
+This query has no vehicle speed, steering angle, tire force, elapsed time or yaw rate. It describes the road, not the motion of a vehicle on it.
+
+`examples/query_and_adapter.py` constructs, rather than simulates, a car pose 0.25 m to the left of this reference point, aligned with the tangent and traveling at body-frame (10,0) m/s. Projection recovers approximately s=100 m and e=0.25 m. See `validation/example_query.json` for every value.
+
+## 7. How outputs connect to a car
+
+There are two interfaces, not one:
+
+### Geometry -> planner/controller/localization
+
+Global pose plus reference geometry yields station, lateral error and heading error. Widths provide constraints; they do not produce wall/contact forces. Curvature enters a road-coordinate transformation if that formulation is selected:
+
+    e_psi = psi - theta(s),
+    s_dot = (vx*cos(e_psi)-vy*sin(e_psi))/(1-kappa(s)*e),
+    e_dot = vx*sin(e_psi)+vy*cos(e_psi),
+    e_psi_dot = r-kappa(s)*s_dot.
+
+`adapter.py` implements these formulas for numerical observations in a locally regular tube. It rejects small/nonpositive coordinate Jacobians. The original body-force dynamics still determine vx_dot, vy_dot and r_dot. Curvature does NOT replace yaw rate; heading does NOT replace the vehicle's actual yaw; heading error is NOT sideslip beta.
+
+### Surface -> wheel/tire/vehicle model
+
+Use global pose and body wheel offsets to calculate each contact point:
+
+    wheel_global_i = vehicle_global + R(psi) * wheel_body_i.
+
+Sample friction and height at each wheel. `wheel_environment()` returns plain dictionaries named `lambda_mue` and `z_height_road_m`, in explicit wheel order front-left, front-right, rear-left, rear-right. No native object is constructed. Native integration and unsupported terrain behavior must be addressed separately.
+
+### Why the old MPC cannot directly swap road classes
+
+The earlier car demo's `Road` exposes `center(X, backend)` and `friction(X,Y,backend)`. It is embedded in symbolic CasADi expressions and uses monotonically increasing global X as the independent variable. The track API instead exposes `sample(s)` and `project([X,Y])` through NumPy/SciPy. A closed circuit does not generally have monotone X. You must change the coordinate formulation or return to time-domain global states, implement a suitable symbolic road representation, and revise road/finish/footprint constraints. This refactor does not perform that controller redesign.
+
+The old demonstration also restricts absolute yaw to +/-0.60 rad. A lap changes yaw through a full circuit, so this old graph-road-specific constraint cannot simply be retained. An appropriate heading-error/steering/feasibility formulation must be chosen separately.
+
+## 8. A practical decomposition
+
+The actual package makes `PeriodicTrack` own a `TrackData`, `Curve`, `WidthProfile`, `ArcLengthMap`, and `SurfaceModel`. This is composition: each owns the data it needs. Functions remain functions when they are stateless transformations. `evaluate_reconstruction()` and `evaluate_noise()` do not become artificial classes just to increase the class count.
+
+Where to edit:
+
+| Desired change | Edit |
+|---|---|
+| Use another ordered four-column track | data file; no changes to the car/tire laws |
+| Add an interpolation algorithm | `interpolation.py`; add method metadata and a factory branch |
+| Change validation folds or scoring | `evaluation.py` |
+| Change centerline/width assembly or projections | `road.py` |
+| Change arc integration or geometric derivatives | `geometry.py` |
+| Add a wet patch or height profile | implement `SurfaceModel` in `surface.py` and pass it explicitly |
+| Map to a different planar vehicle wheel layout | `WheelGeometry` / `adapter.py` |
+| Change tire physics or controller objective | those belong to the separate vehicle/controller project, not this geometry package |
+
+For a clean system, build the road once outside the simulation loop. Keep the numerical integrator, tire law, vehicle dynamics and controller separate. Run interpolation benchmarks offline rather than whenever the vehicle asks for a road point.
+
+## 9. Validation scope
+
+There are 18 unit tests. They cover loader equivalence, all seven interpolation methods in all four phases, values/first/second derivatives/curvature, cubic/quintic road queries, projections, orthonormal frames, boundary offsets, periodic queries, arc-map round trips, zero-smoothing equivalence, explicit surface substitution, invalid input checks, identical exports, and the new numerical adapter.
+
+Both complete default benchmarks were rerun in the same environment. Every non-timing statistic matched exactly; exported road CSV bytes were identical. Six coefficient-array fields and 18 plot-array fields matched to 1e-12; metadata dictionaries were identical. Plotting code was extracted unchanged; newly generated vehicle trajectories or native simulations are not claimed.
+
+Refactoring equivalence demonstrates preservation of the program's calculations. It does not establish physical map accuracy, global uniqueness of projection, full car clearance, tire calibration, controller feasibility, or an optimal lap.

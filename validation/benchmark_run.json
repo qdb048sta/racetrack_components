@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "source_url": "https://raw.githubusercontent.com/TUMFTM/racetrack-database/master/tracks/Norisring.csv",
+    "source_accessed": "2026-10-27",
+    "snapshot_sha256": "8857d3c362ad2923c1f93c8d257498f50459770b9021adcc7969b71085c31d9a",
+    "source_points": 460,
+    "closed_polyline_length_m": 2295.750432732573,
+    "median_original_spacing_m": 4.997696610483672,
+    "total_width_range_m": [
+      10.3,
+      20.97
+    ],
+    "holdout_stride": 4,
+    "holdout_phases": 4,
+    "training_points_phase0": 115,
+    "test_points_phase0": 345,
+    "smoothing_lambda_m3": 100.0,
+    "noise_std_per_coordinate_m": 0.2,
+    "noise_repeats": 10,
+    "cubic_bspline_equivalence_max_difference_m": 2.9673135796061134e-13,
+    "versions": {
+      "python": "3.13.5",
+      "numpy": "2.3.5",
+      "scipy": "1.17.0"
+    },
+    "road": {
+      "export_rows_including_repeated_endpoint": 2298,
+      "spacing_m": 0.9997006387801052,
+      "arc_length_m": 2296.3123672779016,
+      "diagnostic_points_including_all_knots": 115248,
+      "diagnostic_uniform_u_spacing_upper_bound_m": 0.02,
+      "peak_abs_curvature_1pm": 0.11828738399546235,
+      "peak_curvature_source_u_m": 1646.5050655862537,
+      "min_radius_m": 8.453986944527925,
+      "max_no_slip_steering_for_3p2m_wheelbase_rad": 0.361852796003088,
+      "no_slip_min_radius_with_3p2m_wheelbase_and_0p30rad_steering_m": 10.344730060050649,
+      "min_left_offset_jacobian_1_minus_kappa_wleft": -0.0008295559856068557,
+      "min_right_offset_jacobian_1_plus_kappa_wright": 0.14881040210127439
+    },
+    "limitations": [
+      "Source centerline is already smoothed and not survey truth.",
+      "Holdout station labels computed from the entire original polyline and kept fixed.",
+      "Widths, altitude, friction and bank not inferred from geometry. Only widths are supplied.",
+      "Noise test is synthetic; its curvature baseline is the clean full-data cubic, not measured curvature.",
+      "Clothoids and global polynomial methods are discussed, not benchmarked.",
+      "No car simulation, lap-time optimization, or native C++ integration performed.",
+      "Dense-grid checks are diagnostic, not continuous collision/regularity certificates."
+    ]
+  },
+  "comparison": [
+    {
+      "method": "linear",
+      "continuity": "C0",
+      "rmse_m": 0.5971505364850023,
+      "p95_error_m": 1.5849208279329838,
+      "max_error_m": 4.277890327423026,
+      "max_fit_error_m": 8.038873388460929e-14,
+      "mean_length_m": 2287.8281317731994,
+      "max_curvature_jump_1pm": null,
+      "max_heading_jump_rad": 1.6124706832691287,
+      "max_peak_abs_curvature_1pm": null,
+      "fit_median_ms": 0.03432099998690319,
+      "position_eval_10000_median_ms": 0.20646499996246348
+    },
+    {
+      "method": "periodic_cubic",
+      "continuity": "C2",
+      "rmse_m": 0.22842122409099033,
+      "p95_error_m": 0.5203171403011582,
+      "max_error_m": 1.8250346264745165,
+      "max_fit_error_m": 5.0242958677880805e-15,
+      "mean_length_m": 2294.082714228372,
+      "max_curvature_jump_1pm": 1.1339672464916184e-08,
+      "max_heading_jump_rad": 5.431160148283709e-07,
+      "max_peak_abs_curvature_1pm": 0.1907724956163952,
+      "fit_median_ms": 0.2431789999945977,
+      "position_eval_10000_median_ms": 0.3102869999906943
+    },
+    {
+      "method": "pchip_cyclic",
+      "continuity": "C1",
+      "rmse_m": 0.45769187194938127,
+      "p95_error_m": 1.0505920389768133,
+      "max_error_m": 4.330286058969368,
+      "max_fit_error_m": 5.0242958677880805e-15,
+      "mean_length_m": 2292.261499692997,
+      "max_curvature_jump_1pm": 4.39752324374043,
+      "max_heading_jump_rad": 3.202522174117206e-06,
+      "max_peak_abs_curvature_1pm": 7.437917653245854,
+      "fit_median_ms": 0.1749580000023343,
+      "position_eval_10000_median_ms": 0.23261300003696306
+    },
+    {
+      "method": "akima_cyclic",
+      "continuity": "C1",
+      "rmse_m": 0.19534764313692385,
+      "p95_error_m": 0.45994947200909847,
+      "max_error_m": 1.4425035591553894,
+      "max_fit_error_m": 5.0242958677880805e-15,
+      "mean_length_m": 2296.0272515268857,
+      "max_curvature_jump_1pm": 0.1660930389349412,
+      "max_heading_jump_rad": 5.363172177474951e-07,
+      "max_peak_abs_curvature_1pm": 0.23314674663629292,
+      "fit_median_ms": 0.1504420000060236,
+      "position_eval_10000_median_ms": 0.22953900003130912
+    },
+    {
+      "method": "makima_cyclic",
+      "continuity": "C1",
+      "rmse_m": 0.25224692673388893,
+      "p95_error_m": 0.5790328034792175,
+      "max_error_m": 2.15992547794167,
+      "max_fit_error_m": 5.0242958677880805e-15,
+      "mean_length_m": 2292.937536033666,
+      "max_curvature_jump_1pm": 0.2923896558962441,
+      "max_heading_jump_rad": 7.871224152466992e-07,
+      "max_peak_abs_curvature_1pm": 0.42842683346643784,
+      "fit_median_ms": 0.2084369999693081,
+      "position_eval_10000_median_ms": 0.22166700000525452
+    },
+    {
+      "method": "periodic_quintic",
+      "continuity": "C4",
+      "rmse_m": 0.21782228115212365,
+      "p95_error_m": 0.5025449936869517,
+      "max_error_m": 1.6926118386223157,
+      "max_fit_error_m": 1.2710574864626038e-13,
+      "mean_length_m": 2294.8133336149485,
+      "max_curvature_jump_1pm": 1.0221828911083364e-08,
+      "max_heading_jump_rad": 4.551022088072898e-07,
+      "max_peak_abs_curvature_1pm": 0.15597773806323562,
+      "fit_median_ms": 0.3965050000260817,
+      "position_eval_10000_median_ms": 1.107894000028864
+    },
+    {
+      "method": "periodic_smoothing_cubic",
+      "continuity": "C2",
+      "rmse_m": 0.29473899666945147,
+      "p95_error_m": 0.6932253190956176,
+      "max_error_m": 2.154002632663198,
+      "max_fit_error_m": 0.8495355151832666,
+      "mean_length_m": 2290.34373474759,
+      "max_curvature_jump_1pm": 1.3500187384662965e-08,
+      "max_heading_jump_rad": 4.830203379491139e-07,
+      "max_peak_abs_curvature_1pm": 0.17578517938479227,
+      "fit_median_ms": 1.2375449999808552,
+      "position_eval_10000_median_ms": 0.3183300000273448
+    }
+  ],
+  "noise": [
+    {
+      "method": "linear",
+      "rmse_to_clean_samples_m": 0.284339974893849,
+      "curvature_rmse_to_clean_cubic_1pm": null,
+      "peak_abs_curvature_at_midpoints_1pm": null
+    },
+    {
+      "method": "periodic_cubic",
+      "rmse_to_clean_samples_m": 0.2843399748938489,
+      "curvature_rmse_to_clean_cubic_1pm": 0.015882769368253644,
+      "peak_abs_curvature_at_midpoints_1pm": 0.12037827012879673
+    },
+    {
+      "method": "pchip_cyclic",
+      "rmse_to_clean_samples_m": 0.2843399748938489,
+      "curvature_rmse_to_clean_cubic_1pm": 0.010025993374051826,
+      "peak_abs_curvature_at_midpoints_1pm": 0.09967981458062998
+    },
+    {
+      "method": "akima_cyclic",
+      "rmse_to_clean_samples_m": 0.2843399748938489,
+      "curvature_rmse_to_clean_cubic_1pm": 0.008994402854199342,
+      "peak_abs_curvature_at_midpoints_1pm": 0.14685039085770255
+    },
+    {
+      "method": "makima_cyclic",
+      "rmse_to_clean_samples_m": 0.2843399748938489,
+      "curvature_rmse_to_clean_cubic_1pm": 0.008388205058232555,
+      "peak_abs_curvature_at_midpoints_1pm": 0.10234164636973017
+    },
+    {
+      "method": "periodic_quintic",
+      "rmse_to_clean_samples_m": 0.28433997489384893,
+      "curvature_rmse_to_clean_cubic_1pm": 0.02259850895321242,
+      "peak_abs_curvature_at_midpoints_1pm": 0.13326835059739872
+    },
+    {
+      "method": "periodic_smoothing_cubic",
+      "rmse_to_clean_samples_m": 0.17301340133015608,
+      "curvature_rmse_to_clean_cubic_1pm": 0.0031912292594531294,
+      "peak_abs_curvature_at_midpoints_1pm": 0.09821183980243961
+    }
+  ]
+}

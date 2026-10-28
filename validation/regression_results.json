@@ -1,0 +1,32 @@
+{
+  "comparison.csv": {
+    "rows": 7,
+    "max_non_timing_difference": 0.0
+  },
+  "phase_details.csv": {
+    "rows": 28,
+    "max_non_timing_difference": 0.0
+  },
+  "noise_comparison.csv": {
+    "rows": 7,
+    "max_non_timing_difference": 0.0
+  },
+  "noise_details.csv": {
+    "rows": 70,
+    "max_non_timing_difference": 0.0
+  },
+  "norisring_interpolated_1m.csv": {
+    "byte_identical": true
+  },
+  "norisring_periodic_cubic_model.npz": {
+    "arrays_compared": 6,
+    "all_match_at_1e_minus_12": true
+  },
+  "plot_data.npz": {
+    "arrays_compared": 18,
+    "all_match_at_1e_minus_12": true
+  },
+  "metadata.json": {
+    "identical_dictionary": true
+  }
+}

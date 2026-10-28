@@ -1,0 +1,121 @@
+{
+  "track_length_m": 2296.3123672779016,
+  "query_at_100m": {
+    "s_m": 100.0,
+    "u_chord_m": 99.99663082146968,
+    "center": [
+      83.85382157028947,
+      -53.02109204495759
+    ],
+    "tangent": [
+      0.7364491504616296,
+      -0.6764929037206111
+    ],
+    "normal_left": [
+      0.6764929037206111,
+      0.7364491504616296
+    ],
+    "heading_rad": -0.7429899843713377,
+    "curvature_1pm": -0.011916439035289963,
+    "width_right_m": 6.8988084217592665,
+    "width_left_m": 7.451191578240733,
+    "boundary_right": [
+      79.18682662884133,
+      -58.10171364635974
+    ],
+    "boundary_left": [
+      88.8944997972321,
+      -47.533668337235355
+    ],
+    "friction_multiplier_assumed": 1.0,
+    "height_m_assumed": 0.0
+  },
+  "constructed_state": {
+    "x_m": 84.02294479621962,
+    "y_m": -52.836979757342185,
+    "yaw_rad": -0.7429899843713377,
+    "vx_mps": 10.0,
+    "vy_mps": 0.0,
+    "yaw_rate_radps": 0.0
+  },
+  "observation": {
+    "s_unwrapped_m": 99.99999961936295,
+    "e_left_m": 0.2499999999999945,
+    "heading_error_rad": -4.535849584819118e-09,
+    "projection_distance_m": 0.25000000000028594,
+    "point_margin_left_m": 7.2011915903474675,
+    "point_margin_right_m": 7.148808409652532,
+    "road": {
+      "s_m": 99.99999961936295,
+      "u_chord_m": 99.99663044088001,
+      "center": [
+        83.85382128996895,
+        -53.021091787458694
+      ],
+      "tangent": [
+        0.7364491535300998,
+        -0.6764929003801886
+      ],
+      "normal_left": [
+        0.6764929003801886,
+        0.7364491535300998
+      ],
+      "heading_rad": -0.7429899798354881,
+      "curvature_1pm": -0.011916439903013979,
+      "width_right_m": 6.8988084096525375,
+      "width_left_m": 7.451191590347462,
+      "boundary_right": [
+        79.18682637975587,
+        -58.10171340111364
+      ],
+      "boundary_left": [
+        88.89449950021157,
+        -47.53366804795671
+      ]
+    }
+  },
+  "coordinate_rates_not_a_simulation": {
+    "s_dot_mps": 9.970297387591398,
+    "e_dot_mps": -4.535849584819118e-08,
+    "heading_error_dot_radps": 0.11881044963441016,
+    "coordinate_jacobian": 1.0029791099757535
+  },
+  "plain_python_environment_payload": {
+    "wheel_names": [
+      "front_left",
+      "front_right",
+      "rear_left",
+      "rear_right"
+    ],
+    "wheel_positions_xy_m": [
+      [
+        85.83377745459195,
+        -53.414094202987215
+      ],
+      [
+        84.75138880863898,
+        -54.592412843725825
+      ],
+      [
+        83.47714017311475,
+        -51.24931691108126
+      ],
+      [
+        82.39475152716176,
+        -52.42763555181987
+      ]
+    ],
+    "lambda_mue": {
+      "front_left": 1.0,
+      "front_right": 1.0,
+      "rear_left": 1.0,
+      "rear_right": 1.0
+    },
+    "z_height_road_m": {
+      "front_left": 0.0,
+      "front_right": 0.0,
+      "rear_left": 0.0,
+      "rear_right": 0.0
+    }
+  }
+}
