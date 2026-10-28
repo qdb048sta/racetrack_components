@@ -1,0 +1,18 @@
+{
+  "maximum_speed_mps": 18.0,
+  "lateral_acceleration_budget_mps2": 2.0,
+  "planning_acceleration_mps2": 1.5,
+  "planning_braking_mps2": 2.0,
+  "speed_grid_spacing_m": 0.5,
+  "initial_speed_mps": 8.0,
+  "initial_lateral_offset_m": 0.0,
+  "control_period_s": 0.1,
+  "integration_step_s": 0.01,
+  "horizon_steps": 25,
+  "prediction_substeps": 4,
+  "maximum_time_s": 600.0,
+  "laps": 1.0,
+  "maximum_solver_iterations": 75,
+  "corridor_center_margin_m": 2.45,
+  "projection_window_m": 10.0
+}

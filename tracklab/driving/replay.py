@@ -30,7 +30,7 @@ def build_replay(road,raw,diagnostics,metrics,predictions,vehicle,driving,path):
              'columns':['time_s','x_m','y_m','yaw_rad','vx_mps','vy_mps','yaw_rate_radps','steering_rad',
                         'progress_m','cross_track_error_m','sideslip_rad','reference_speed_mps',
                         'ax_body_mps2','ay_body_mps2','grip_utilization','steering_target_rad','force_acceleration_mps2']}
-    text=Path(__file__).with_name('replay_template.html').read_text()
+    text = Path(__file__).with_name('replay_template.html').read_text(encoding='utf-8')
     text=text.replace('__PAYLOAD__',json.dumps(payload,separators=(',',':'),allow_nan=False).replace('</','<\\/'))
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text,encoding='utf8')
     return path

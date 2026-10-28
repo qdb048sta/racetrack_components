@@ -1,0 +1,20 @@
+{
+  "mass_kg": 800.0,
+  "yaw_inertia_kgm2": 1000.0,
+  "wheelbase_m": 3.2,
+  "lf_m": 1.724,
+  "body_length_m": 4.4,
+  "body_width_m": 1.9,
+  "visual_track_width_m": 1.6,
+  "cornering_coefficient_per_rad": 14.0,
+  "nominal_friction": 1.0,
+  "gravity_mps2": 9.81,
+  "drag_coefficient_area_m2": 0.75,
+  "air_density_kgpm3": 1.225,
+  "steering_limit_rad": 0.5,
+  "steering_rate_limit_radps": 0.9,
+  "steering_time_constant_s": 0.12,
+  "acceleration_limit_mps2": 2.5,
+  "braking_limit_mps2": 4.0,
+  "velocity_regularization_mps": 0.2
+}
