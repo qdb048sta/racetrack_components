@@ -1,0 +1,40 @@
+{
+  "vehicle": {
+    "mass_kg": 800.0,
+    "yaw_inertia_kgm2": 1000.0,
+    "wheelbase_m": 3.2,
+    "lf_m": 1.724,
+    "body_length_m": 4.4,
+    "body_width_m": 1.9,
+    "visual_track_width_m": 1.6,
+    "cornering_coefficient_per_rad": 14.0,
+    "nominal_friction": 1.0,
+    "gravity_mps2": 9.81,
+    "drag_coefficient_area_m2": 0.75,
+    "air_density_kgpm3": 1.225,
+    "steering_limit_rad": 0.5,
+    "steering_rate_limit_radps": 0.9,
+    "steering_time_constant_s": 0.12,
+    "acceleration_limit_mps2": 2.5,
+    "braking_limit_mps2": 4.0,
+    "velocity_regularization_mps": 0.2
+  },
+  "driving": {
+    "maximum_speed_mps": 18.0,
+    "lateral_acceleration_budget_mps2": 2.0,
+    "planning_acceleration_mps2": 1.5,
+    "planning_braking_mps2": 2.0,
+    "speed_grid_spacing_m": 0.5,
+    "initial_speed_mps": 8.0,
+    "initial_lateral_offset_m": 0.0,
+    "control_period_s": 0.1,
+    "integration_step_s": 0.01,
+    "horizon_steps": 25,
+    "prediction_substeps": 4,
+    "maximum_time_s": 600.0,
+    "laps": 1.0,
+    "maximum_solver_iterations": 75,
+    "corridor_center_margin_m": 2.45,
+    "projection_window_m": 10.0
+  }
+}
