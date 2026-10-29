@@ -26,6 +26,32 @@ def write_csv(path: Path, rows: list[dict[str,Any]]) -> None:
         w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader()
         w.writerows(json_clean(rows))
 
+def export_road_map(track: "PeriodicTrack", path: str | Path, spacing_m: float = 1.0) -> Path:
+    """Save a course map from geometry alone; no benchmark or surface sampling."""
+    if not np.isfinite(spacing_m) or spacing_m <= 0:
+        raise ValueError("spacing must be finite and positive.")
+    import matplotlib.pyplot as plt
+
+    path = Path(path)
+    s = np.linspace(0, track.length, max(3, math.ceil(track.length / spacing_m)) + 1)
+    q = track.sample_geometry(s)
+    fig, ax = plt.subplots(figsize=(9, 7))
+    try:
+        for key, label in (("boundary_left", "Left boundary"),
+                           ("boundary_right", "Right boundary")):
+            ax.plot(q[key][:, 0], q[key][:, 1], lw=1, label=label)
+        ax.plot(q["center"][:, 0], q["center"][:, 1], "--", lw=1, label="Centerline")
+        ax.plot(*q["center"][0], "o", label="Station 0")
+        ax.set(aspect="equal", xlabel="Local x [m]", ylabel="Local y [m]", title="Race course")
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=.25)
+        fig.tight_layout()
+        fig.savefig(path, dpi=180)
+    finally:
+        plt.close(fig)
+    return path
+
+
 def export_road(track: "PeriodicTrack",path: Path,spacing_m: float=1.0) -> dict[str,float]:
     if spacing_m<=0:raise ValueError('spacing must be positive.')
     s=np.linspace(0,track.length,math.ceil(track.length/spacing_m)+1)

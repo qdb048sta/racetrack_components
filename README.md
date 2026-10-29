@@ -36,9 +36,14 @@ print(query["center"], query["curvature_1pm"])
 point = query["center"] + 0.25 * query["normal_left"]
 projection = road.project(point, hint_s=100.0)
 print(projection)
+
+# Save a course map without running the interpolation benchmark:
+road.export_map("course_map.png")
 ```
 
 Construction fits the source and prepares the arc-length maps once. Repeated sampling reuses the objects. Importing `tracklab` does not run the benchmark or import Matplotlib.
+
+`road.export_map(path, spacing_m=1.0)` saves an equal-scale map of the centerline, both reconstructed boundaries, and station 0. The filename extension selects the image format (for example, PNG or SVG); the map uses local coordinates in metres.
 
 ## CSV to interpolation, modeling, and output
 
@@ -56,6 +61,8 @@ flowchart TD
     ROAD["tracklab/road.py: PeriodicTrack<br/>sample_geometry(s): wrap station, convert s to u, evaluate geometry and widths<br/>Borders = center minus right_width * normal / plus left_width * normal<br/>project(xy): estimate road station and lateral offset"]
     SURFACE["tracklab/surface.py: FlatSurface or custom SurfaceModel<br/>Default flat height and assumed friction; not measured in CSV"]
     SAMPLE["tracklab/road.py: sample(s)<br/>Road geometry plus modeled surface values"]
+    MAP["Optional: PeriodicTrack.export_map(path)<br/>tracklab/export.py: export_road_map<br/>Sample geometry and draw the course map with Matplotlib"]
+    MAPFILE["course_map.png (or chosen image path)<br/>Centerline, reconstructed boundaries and station 0"]
     CSV --> LOAD --> DATA
     DATA --> CENTER
     DATA --> WIDTH
@@ -66,6 +73,7 @@ flowchart TD
     WIDTH --> ROAD
     ROAD --> SAMPLE
     SURFACE --> SAMPLE
+    ROAD --> MAP --> MAPFILE
 ```
 
 Here `u` is distance along the source polyline, while `s` is numerically integrated distance along the fitted curve. The road object fits and caches its interpolants and maps once, then reuses them for sampling. Road modeling here means constructing continuous geometry, boundaries, and a surface interface; the vehicle dynamics model is a later stage in the driving path.
@@ -143,7 +151,7 @@ The controller tracks the road and planned speed using a dynamic single-track ve
 | `surface.py` | `SurfaceModel` interface and explicit `FlatSurface` assumptions. |
 | `road.py` | `WidthProfile` and `PeriodicTrack`; compose the above into queries and projection. |
 | `evaluation.py` | Withheld-position test, synthetic-noise test, knot/seam metrics, benchmark orchestration. |
-| `export.py` | JSON/CSV helpers and legacy road/coefficients export with geometric diagnostics. |
+| `export.py` | JSON/CSV helpers, road/coefficients export with geometric diagnostics, and standalone course-map images. |
 | `plotting.py` | Plot saved results; not used by the numerical road API. |
 | `adapter.py` | NEW planar-car observation, Frenet-coordinate rates and wheel-environment mapping. |
 | `cli.py` / `__main__.py` | Parse command-line options and run the offline study. |

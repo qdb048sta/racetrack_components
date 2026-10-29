@@ -14,7 +14,7 @@ from .data import TrackData, FloatArray
 from .interpolation import make_curve
 from .geometry import ArcLengthMap, local_frame
 from .surface import FlatSurface, SurfaceModel
-from .export import export_road
+from .export import export_road, export_road_map
 
 
 class WidthProfile:
@@ -102,3 +102,7 @@ class PeriodicTrack:
 
     def export(self, path: Path, spacing_m: float = 1.0) -> dict[str, float]:
         return export_road(self, Path(path), spacing_m)
+
+    def export_map(self, path: str | Path, spacing_m: float = 1.0) -> Path:
+        """Save a course map (e.g. PNG or SVG); import Matplotlib only on use."""
+        return export_road_map(self, path, spacing_m)
