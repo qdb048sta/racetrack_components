@@ -2,7 +2,7 @@
 
 This package decomposes the previously delivered `racetrack_interpolation_demo.py` into separate data, interpolation, geometry, surface, road, evaluation, export and adapter components. The original 428-line file is preserved in `original/`.
 
-**This is not a new MPC implementation or a native Open-Car-Dynamics simulation.** The new adapter demonstrates coordinate and per-wheel surface interfaces only. All interpolation/road benchmark formulas and default numerical outputs are preserved. New input checks and optional custom surface behavior are documented in the modules.
+**The offline interpolation study and adapter are separate from the optional driving simulation.** The adapter demonstrates coordinate and per-wheel surface interfaces only. The driving path uses a Python dynamic single-track model and tracking NMPC; it is not a native Open-Car-Dynamics simulation. All interpolation/road benchmark formulas and default numerical outputs are preserved. New input checks and optional custom surface behavior are documented in the modules.
 
 ## Run
 
@@ -39,6 +39,99 @@ print(projection)
 ```
 
 Construction fits the source and prepares the arc-length maps once. Repeated sampling reuses the objects. Importing `tracklab` does not run the benchmark or import Matplotlib.
+
+## CSV to interpolation, modeling, and output
+
+The shared road-building pipeline below is used by both entry points. Paths are relative to the repository root; arrows show the data passed between stages.
+
+```mermaid
+flowchart TD
+    CSV["data/Norisring.csv<br/>Ordered x, y, right_width, left_width in metres"]
+    LOAD["tracklab/data.py: load_track / TrackData.from_csv<br/>Read with numpy.loadtxt; validate finite rows and positive widths<br/>Remove repeated closing endpoint; reject duplicate points and large closing gaps"]
+    DATA["TrackData<br/>rows + cumulative chord-distance stations u<br/>Closed polyline period U, including last-to-first segment"]
+    CENTER["tracklab/interpolation.py: make_curve / Curve<br/>Fit x(u), y(u) through all source points<br/>Default: periodic cubic; road API also allows periodic quintic"]
+    WIDTH["tracklab/road.py: WidthProfile<br/>make_curve with pchip_cyclic<br/>Interpolate right and left half-widths over u"]
+    ARC["tracklab/geometry.py: ArcLengthMap.build<br/>Integrate the norm of the curve derivative<br/>Build numerical u-to-s and s-to-u PCHIP maps; compute lap length"]
+    FRAME["tracklab/geometry.py: local_frame<br/>Curve derivatives give tangent, left normal,<br/>heading and curvature"]
+    ROAD["tracklab/road.py: PeriodicTrack<br/>sample_geometry(s): wrap station, convert s to u, evaluate geometry and widths<br/>Borders = center minus right_width * normal / plus left_width * normal<br/>project(xy): estimate road station and lateral offset"]
+    SURFACE["tracklab/surface.py: FlatSurface or custom SurfaceModel<br/>Default flat height and assumed friction; not measured in CSV"]
+    SAMPLE["tracklab/road.py: sample(s)<br/>Road geometry plus modeled surface values"]
+    CSV --> LOAD --> DATA
+    DATA --> CENTER
+    DATA --> WIDTH
+    CENTER --> ARC
+    CENTER --> FRAME
+    ARC --> ROAD
+    FRAME --> ROAD
+    WIDTH --> ROAD
+    ROAD --> SAMPLE
+    SURFACE --> SAMPLE
+```
+
+Here `u` is distance along the source polyline, while `s` is numerically integrated distance along the fitted curve. The road object fits and caches its interpolants and maps once, then reuses them for sampling. Road modeling here means constructing continuous geometry, boundaries, and a surface interface; the vehicle dynamics model is a later stage in the driving path.
+
+### Offline interpolation study and road export
+
+Run `python -m tracklab --data data/Norisring.csv --output results`.
+
+```mermaid
+flowchart TD
+    CLI["tracklab/__main__.py → tracklab/cli.py: main<br/>Parse data, output, holdout, smoothing and noise options"]
+    EXP["tracklab/evaluation.py: run_experiment<br/>Load TrackData through tracklab/data.py"]
+    FIT["tracklab/evaluation.py: evaluate_reconstruction / evaluate_noise<br/>tracklab/interpolation.py: make_curve<br/>Compare linear, periodic cubic, cyclic PCHIP, Akima, Makima,<br/>periodic quintic and periodic smoothing cubic"]
+    METRICS["results/comparison.csv + phase_details.csv<br/>results/noise_comparison.csv + noise_details.csv"]
+    ROAD["tracklab/road.py: PeriodicTrack<br/>Build a separate full-data periodic cubic road<br/>using the shared pipeline above"]
+    EXPORT["tracklab/export.py: export_road<br/>Sample road at approximately 1 m spacing<br/>Compute separate dense-grid geometric diagnostics"]
+    FILES["results/norisring_interpolated_1m.csv<br/>Position, heading, curvature, widths, borders, assumed friction and height<br/>results/norisring_periodic_cubic_model.npz<br/>Spline coefficients, source stations, widths and arc-length maps"]
+    META["tracklab/evaluation.py + tracklab/export.py<br/>results/metadata.json: source hash, settings, versions and diagnostics<br/>results/plot_data.npz: sampled comparison curves and curvature"]
+    PLOT["tracklab/plotting.py: plot_results<br/>Read plot_data.npz and create track_overview.png,<br/>bend_comparison.png and curvature_comparison.png"]
+    CLI --> EXP
+    EXP --> FIT --> METRICS
+    EXP --> ROAD --> EXPORT --> FILES
+    FIT --> META
+    EXPORT --> META
+    META --> PLOT
+```
+
+Benchmark fits use withheld positions and synthetic noise to compare methods. Their scores do not select or modify the exported road: `PeriodicTrack` independently fits every source point. `--no-plots` skips the PNGs.
+
+### Driving model, closed-loop simulation, and replay
+
+Install `requirements-driving.txt`, then run `python run_drive.py --output drive_results`. To load the supplied configuration explicitly, add `--config configs/default_drive.json`; without `--config`, the dataclass defaults are used.
+
+```mermaid
+flowchart TD
+    RUN["run_drive.py: main<br/>Parse track, output, configuration and driving overrides"]
+    CONFIG["tracklab/driving/config.py: load_config<br/>VehicleConfig + DrivingConfig<br/>Optional configs/default_drive.json or another JSON file"]
+    ROAD["tracklab/road.py: PeriodicTrack<br/>CSV → interpolated continuous road<br/>Shared road-building pipeline above"]
+    SIM["tracklab/driving/simulation.py: simulate<br/>Initialize vehicle state, plan and controller"]
+    PLAN["tracklab/driving/planning.py: CurvatureSpeedPlan<br/>Sample road curvature; build speed envelope<br/>Apply speed, lateral-acceleration, acceleration and braking limits"]
+    CTRL["tracklab/driving/controller.py: TrackingMPC.solve<br/>Sample numeric road preview and speed references<br/>CasADi / IPOPT optimize steering target and acceleration command<br/>Keep predicted trajectories; apply first command"]
+    PLANT["tracklab/driving/vehicle.py: DynamicBicycle<br/>Tire forces, body dynamics and steering actuation<br/>Integrate actual state over time with plant.step"]
+    FEEDBACK["tracklab/driving/simulation.py<br/>Sample surface friction at axles; project actual position onto road<br/>Update progress and pass new state to next controller solve"]
+    RESULT["Simulation result<br/>Time, states, applied inputs, progress, solver logs,<br/>predictions, speed plan and configuration"]
+    SAVE["tracklab/driving/artifacts.py: save_results"]
+    CHECK["tracklab/driving/validation.py<br/>diagnose: tracking, grip and footprint diagnostics<br/>check_recorded_input_replay: independent integration check"]
+    FILES["drive_results/<br/>run_raw.npz, diagnostics.npz, trajectory.csv<br/>solver_log.csv, speed_schedule.csv, metrics.json<br/>solves.json, predictions.json, vehicle_config.json, driving_config.json<br/>independent_integration_check.json when enabled"]
+    REPLAY["tracklab/driving/replay.py: build_replay<br/>Combine road geometry, sampled states, diagnostics and predictions<br/>Embed JSON into tracklab/driving/replay_template.html"]
+    HTML["drive_results/norisring_replay.html<br/>Standalone interactive browser replay"]
+    PLOTS["tracklab/driving/plots.py: make_plots<br/>drive_results/trajectory.png, speed.png,<br/>angles.png and tracking_error.png"]
+    RUN --> CONFIG
+    RUN --> ROAD
+    CONFIG --> SIM
+    ROAD --> SIM
+    SIM --> PLAN --> CTRL
+    CTRL --> PLANT --> FEEDBACK
+    ROAD --> FEEDBACK
+    FEEDBACK -->|next control period| CTRL
+    FEEDBACK -->|lap target reached| RESULT
+    RESULT --> SAVE --> CHECK --> FILES
+    SAVE --> REPLAY --> HTML
+    ROAD --> REPLAY
+    FILES --> PLOTS
+```
+
+The controller tracks the road and planned speed using a dynamic single-track vehicle model; its objective is trajectory tracking. Vehicle states come from time integration of the dynamics. The replay displays those recorded states and controller predictions. `--no-independent-check` skips the independent integration check, and `--no-plots` skips the driving PNGs; the HTML replay is still produced.
 
 ## Components
 
