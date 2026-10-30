@@ -7,6 +7,10 @@ This package decomposes the previously delivered `racetrack_interpolation_demo.p
 NMPC. `tracklab.driving_OCD` uses compiled TUM Open Car Dynamics single-track and
 linear-tire components. Both use the same interpolation and road geometry.
 
+See [the model and interpolation equations](#mathematical-models-and-interpolation)
+and [the OCD file-by-file integration walkthrough](tracklab/driving_OCD/README.md#file-by-file-integration-walkthrough)
+for the implementation details and original-versus-local code comparisons.
+
 ## Step-by-step setup from a fresh clone
 
 Use **Python 3.12** for these instructions; `.python-version` already selects it.
@@ -402,6 +406,384 @@ flowchart TD
 
 The controller tracks the road and planned speed using a dynamic single-track vehicle model; its objective is trajectory tracking. Vehicle states come from time integration of the dynamics. The replay displays those recorded states and controller predictions. `--no-independent-check` skips the independent integration check, and `--no-plots` skips the driving PNGs; the HTML replay is still produced.
 
+## Mathematical models and interpolation
+
+### Shared interpolation and road geometry
+
+Both driving packages use the same [data loader](tracklab/data.py), [interpolants](tracklab/interpolation.py), [geometry](tracklab/geometry.py), and [road API](tracklab/road.py). Neither vehicle model changes the track coordinates. Both run scripts construct `PeriodicTrack(args.track)`, whose centerline defaults to `periodic_cubic`; the road API also accepts `periodic_quintic`. The other methods below belong to the offline comparison, with cyclic PCHIP additionally used for road widths.
+
+**Source distance and curve parameter.** For ordered points $p_i=(x_i,y_i)$, interpret indices cyclically, including the segment from the last point back to the first. [The loader](tracklab/data.py#L15) removes a repeated final endpoint and computes
+
+$$
+d_i=\lVert p_{i+1}-p_i\rVert,\qquad u_0=0,\qquad
+u_i=\sum_{j=0}^{i-1}d_j,\qquad U=\sum_{i=0}^{n-1}d_i.
+$$
+
+Thus $u$ measures distance along the source polyline. It is neither simulation time nor exact distance along the fitted centerline $C(u)=(x(u),y(u))$. Coordinates are fitted independently against these stations. Every `Curve` query wraps its argument to $u_0+((u-u_0)\bmod U)$.
+
+**Seven fitted-curve methods.** For one coordinate $z$, write $h_i=u_{i+1}-u_i$, $q_i=(z_{i+1}-z_i)/h_i$, and $\tau=(u-u_i)/h_i$. The closing sample is $(u_n,z_n)=(U,z_0)$.
+
+| Method | Construction | Continuity in $u$ |
+|---|---|---|
+| `linear` | Straight segments through every source point | $C^0$ |
+| `periodic_cubic` | Exact periodic piecewise cubic | $C^2$ |
+| `pchip_cyclic` | Cubic Hermite pieces with PCHIP slopes | $C^1$ |
+| `akima_cyclic` | Cubic Hermite pieces with Akima slopes | $C^1$ |
+| `makima_cyclic` | Cubic Hermite pieces with modified Akima slopes | $C^1$ |
+| `periodic_quintic` | Exact periodic piecewise quintic | $C^4$ |
+| `periodic_smoothing_cubic` | Regularized periodic cubic fit | $C^2$ |
+
+Linear interpolation is $z(u)=(1-\tau)z_i+\tau z_{i+1}$. Its tangent jumps at corners; the API deliberately returns undefined curvature (`NaN`) rather than interpreting zero segment curvature as valid corner curvature.
+
+The cubic and quintic splines have interval polynomials
+
+$$
+z_i(u)=\sum_{j=0}^{k}a_{ij}(u-u_i)^j,\qquad k\in\{3,5\}.
+$$
+
+They interpolate the supplied coordinates. Derivatives through order $k-1$ match between pieces and across the lap seam. [The implementation](tracklab/interpolation.py#L70) delegates the coefficient solve to SciPy `CubicSpline(..., bc_type='periodic')` or `make_interp_spline(..., k=5, bc_type='periodic')`.
+
+PCHIP, Akima, and Makima use the same cubic Hermite polynomial, with different knot slopes $m_i$:
+
+$$
+\begin{aligned}
+z(u)={}&(2\tau^3-3\tau^2+1)z_i+(\tau^3-2\tau^2+\tau)h_i m_i\\
+&+(-2\tau^3+3\tau^2)z_{i+1}+(\tau^3-\tau^2)h_i m_{i+1}.
+\end{aligned}
+$$
+
+PCHIP sets $m_i=0$ when $q_{i-1}q_i\leq0$; otherwise it uses the weighted harmonic mean
+
+$$
+\frac{w_1+w_2}{m_i}=\frac{w_1}{q_{i-1}}+\frac{w_2}{q_i},\qquad
+w_1=2h_i+h_{i-1},\quad w_2=h_i+2h_{i-1}.
+$$
+
+This preserves each scalar coordinate's local monotonicity; it does not establish that the planar curve has no intersections. See the [SciPy PCHIP slope definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html).
+
+Akima uses
+
+$$
+m_i=\frac{w_1q_{i-1}+w_2q_i}{w_1+w_2},\qquad
+w_1=|q_{i+1}-q_i|,\quad w_2=|q_{i-1}-q_{i-2}|.
+$$
+
+Makima uses the same slope formula with
+
+$$
+w_1=|q_{i+1}-q_i|+\tfrac12|q_{i+1}+q_i|,\qquad
+w_2=|q_{i-1}-q_{i-2}|+\tfrac12|q_{i-1}+q_{i-2}|.
+$$
+
+SciPy supplies fallback slopes when the weights are degenerate or too small; see its [Akima/Makima definitions](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html). For these three cyclic methods, the repo prepends the last three samples shifted by $-U$ and appends the first three shifted by $+U$. This gives the seam the correct neighboring slopes; wrapping query positions alone would not do that. Their second derivatives, and therefore curvature, may jump at knots.
+
+The smoothing method solves for fitted nodal positions $V=(v_i)$:
+
+$$
+\min_V\left[\sum_i\lVert v_i-p_i\rVert^2+
+\lambda\int_0^U\lVert C_V''(u)\rVert^2\,du\right],\qquad
+(I+\lambda K)V=P,\quad K_{jk}=\int_0^U B_j''(u)B_k''(u)\,du.
+$$
+
+Here $C_V$ is the periodic cubic through $V$ and $B_j$ are its cardinal basis functions. [The smoothing matrix](tracklab/interpolation.py#L48) integrates the products exactly with two Gauss nodes per source interval, then uses a Cholesky solve. The parameter $\lambda$ has units $\mathrm m^3$ with these coordinates; it is a second-derivative penalty in $u$, rather than the geometric curvature energy $\int\kappa^2ds$ or a FITPACK residual budget. Smoothing is confined to the benchmark: moving the driving centerline would require preserving or reprojecting the original road borders.
+
+**Arc length and local geometry.** [ArcLengthMap](tracklab/geometry.py#L36) builds
+
+$$
+s(u)=\int_0^u\lVert C'(q)\rVert\,dq,\qquad L=s(U).
+$$
+
+The implementation uses eight subintervals per source segment and five-point Gauss quadrature per subinterval. Forward and inverse PCHIP maps approximate $s(u)$ and $u(s)$. Road queries first wrap $s$ modulo $L$, then evaluate the curve at the numerically inverted parameter. The inversion is not an analytic arc-length reparameterization: its $C^1$ interpolation means a quintic centerline alone does not make every sampled field $C^2$ in $s$.
+
+For nonzero $\lVert C'(u)\rVert$, the [local frame](tracklab/geometry.py#L14) is
+
+$$
+t=\frac{C'}{\lVert C'\rVert},\qquad n=(-t_y,t_x),\qquad
+\psi_{\mathrm{road}}=\operatorname{atan2}(t_y,t_x),\qquad
+\kappa=\frac{x'y''-y'x''}{(x'^2+y'^2)^{3/2}}.
+$$
+
+Primes here mean derivatives with respect to $u$; the curvature formula remains valid even though $u$ is not fitted-curve arc length. Positive curvature turns left. Heading is a principal angle and may wrap at $\pm\pi$.
+
+The CSV widths are ordered **right, left**. [WidthProfile](tracklab/road.py#L20) fits a cyclic scalar PCHIP to each, giving $w_R(u)$ and $w_L(u)$. The sampled road borders are
+
+$$
+b_R=C-w_Rn,\qquad b_L=C+w_Ln.
+$$
+
+The course map exported by `PeriodicTrack.export_map()` plots these sampled borders and centerline. The approximately one-metre export grid is a visualization/inspection grid, rather than the dynamics integration step or a clearance guarantee.
+
+**Projection and vehicle coordinates.** `road.project()` estimates the closest station using a grid seed and bounded local minimization of $\lVert p-C(u(s))\rVert^2$. For the selected projection, the adapter defines $e=(p-C)\cdot n$ and $e_\psi=\operatorname{wrap}(\psi-\psi_{\mathrm{road}})$. With body-frame velocities $v_x,v_y$ and yaw rate $r$, its local geometric rate formulas are
+
+$$
+\dot s=\frac{v_x\cos e_\psi-v_y\sin e_\psi}{1-\kappa e},\qquad
+\dot e=v_x\sin e_\psi+v_y\cos e_\psi,\qquad
+\dot e_\psi=r-\kappa\dot s.
+$$
+
+These [adapter formulas](tracklab/adapter.py#L96) assume a regular local road tube and the arc-length interpretation of $s$; they do not exactly differentiate the approximate inverse map. A positive $1-\kappa e$ does not establish global projection uniqueness. Point margins $w_L-e$ and $w_R+e$ do not guarantee clearance of a finite car footprint.
+
+[FlatSurface](tracklab/surface.py) supplies the explicit assumptions $\lambda_\mu=1$ and $z_{\mathrm{road}}=0$ by default. The CSV has no measured friction or elevation. The multiplier $\lambda_\mu$ scales a tire model's friction/force parameters; it is not itself a measured tire friction coefficient. `RoadCarAdapter` only maps road observations and wheel environments; the separate driving packages perform vehicle integration and tire-force calculations.
+
+### Coordinates and body equations shared by both cars
+
+The package names are `tracklab/driving` and `tracklab/driving_OCD`. The formulas
+below describe their current configured models, including numerical guards.
+Use SI units, positive body lateral velocity to the left, and positive yaw and
+steering counterclockwise. Let $l_f$ and $l_r$ be the distances from the center
+of gravity to the front and rear axles, $L_v=l_f+l_r$, $m$ the mass, $I_z$ the yaw
+inertia, and $r$ the yaw rate. $X,Y,\psi$ are global position and heading;
+$v_x,v_y$ are body-frame velocities. Both cars use
+
+$$
+\begin{aligned}
+\dot X&=v_x\cos\psi-v_y\sin\psi,&
+\dot Y&=v_x\sin\psi+v_y\cos\psi,& \dot\psi&=r,\\
+\dot v_x&=F_x^b/m+rv_y,&
+\dot v_y&=F_y^b/m-rv_x,& \dot r&=M_z/I_z.
+\end{aligned}
+$$
+
+Here $F_x^b,F_y^b$ are the total physical forces in the body frame.
+The logged `ax_body_mps2` and `ay_body_mps2` are $F_x^b/m,F_y^b/m$; the
+rotating-frame terms make these different from $\dot v_x,\dot v_y$.
+Both command vectors are $u=[\delta_{cmd},a_{cmd}]$, where $a_{cmd}$ means
+requested tire force divided by mass. It does not prescribe achieved acceleration.
+
+### Existing Python car: `driving/vehicle.py`
+
+[DynamicBicycle and SaturatingAxleTire](tracklab/driving/vehicle.py) are local
+Python models. Their seven states are
+$z=[X,Y,\psi,v_x,v_y,r,\delta]$. For axle $i\in\{f,r\}$, let
+$\lambda_i$ be the road multiplier and $\mu_i=\mu_0\lambda_i$.
+The static loads, regularized slip angles, and direct longitudinal allocation are
+
+$$
+\begin{gathered}
+F_{zf}=mg\frac{l_r}{L_v},\qquad F_{zr}=mg\frac{l_f}{L_v},\qquad
+d_v=\sqrt{v_x^2+v_{reg}^2},\\
+\alpha_f=\delta-\operatorname{atan2}(v_y+l_fr,d_v),\qquad
+\alpha_r=-\operatorname{atan2}(v_y-l_rr,d_v),\\
+F_{xi}=\operatorname{clip}\left(F_{zi}\frac{a_{cmd}}{g},
+-0.9\mu_iF_{zi},\;0.9\mu_iF_{zi}\right).
+\end{gathered}
+$$
+
+The axle tire law reserves lateral capacity after longitudinal force:
+
+$$
+Q_i=\sqrt{\max\left((\mu_iF_{zi})^2-F_{xi}^2,
+0.0025(\mu_iF_{zi})^2\right)},\qquad
+F_{yi}=Q_i\tanh\left(\frac{C_\alpha F_{zi}\alpha_i}{Q_i}\right).
+$$
+
+Thus $F_{yi}\simeq C_\alpha F_{zi}\alpha_i$ near zero slip and saturates
+at $\pm Q_i$. $C_\alpha$ is load-normalized stiffness, rather than an axle
+stiffness in N/rad. The square-root floor is part of the implementation; the
+longitudinal clipping keeps it inactive in the supported range. These tires
+are a Tracklab approximation, rather than TUM's `Linear` tire class.
+
+With $c=\cos\delta$, $s_\delta=\sin\delta$, body forces and yaw moment are
+
+$$
+\begin{aligned}
+F_x^b&=cF_{xf}-s_\delta F_{yf}+F_{xr}
+-\tfrac12\rho(C_dA)v_x|v_x|,\\
+F_y^b&=s_\delta F_{xf}+cF_{yf}+F_{yr},\\
+M_z&=l_f(s_\delta F_{xf}+cF_{yf})-l_rF_{yr},\\
+\dot\delta&=\dot\delta_{max}\tanh\left(
+\frac{\delta_{cmd}-\delta}{T_\delta\dot\delta_{max}}\right).
+\end{aligned}
+$$
+
+The last equation gives a smooth steering lag and bounded rate; steering
+commands are also bounded. There are no wheel-speed states, longitudinal slip
+dynamics, rolling resistance, aerodynamic lift, or lateral aerodynamic drag.
+The plant and CasADi predictor share `evaluate()` as their equation builder.
+
+### Native TUM car: `driving_OCD`
+
+The actual plant compiles pinned TUM C++ components. The separate CasADi
+`symbolic_rhs()` in [vehicle.py](tracklab/driving_OCD/vehicle.py) transcribes
+their continuous equations for prediction. See the
+[file-by-file integration and source comparisons](tracklab/driving_OCD/README.md)
+for the original upstream files and the adapter code.
+
+The native state is
+$z=[X,Y,\psi,v_x,v_y,r,\omega_{FL},\omega_{FR},\omega_{RL},\omega_{RR},\delta_s]$.
+Wheel order is front-left, front-right, rear-left, rear-right. Physical wheel
+steering is $\delta=\delta_s+\delta_{offset}$. Left and right wheels on an axle
+share contact kinematics; four wheel rotations remain in this single-track
+body model. Track width does not enter these body equations.
+
+#### Torque allocation and tire contact kinematics
+
+Tracklab converts the force request to native wheel torque inputs outside the
+TUM model, using static load proportions:
+
+$$
+T_{FL}=T_{FR}=\frac{ma_{cmd}R}{2}\frac{l_r}{L_v},\qquad
+T_{RL}=T_{RR}=\frac{ma_{cmd}R}{2}\frac{l_f}{L_v}.
+$$
+
+For the configured common rolling radius $R$, tire-frame velocities are
+
+$$
+\begin{aligned}
+v_{xf}^t&=v_x\cos\delta+(v_y+l_fr)\sin\delta,&
+v_{yf}^t&=-v_x\sin\delta+(v_y+l_fr)\cos\delta,\\
+v_{xr}^t&=v_x,&v_{yr}^t&=v_y-l_rr.
+\end{aligned}
+$$
+
+The pinned [single-track implementation](https://github.com/TUMFTM/Open-Car-Dynamics/blob/94f8fb187fb0ed22bba1d809bd74f66d1ff75af4/lib/ocd_vehicle_dynamics_single_track_cpp/include/ocd_vehicle_dynamics_single_track_cpp/vehicle_dynamics_equations_impl.hpp)
+computes each wheel's slip angle and longitudinal slip $\sigma_j$ as
+
+$$
+\alpha_j=-\operatorname{atan2}(v_{yj}^t,\max(1,v_{xj}^t)),\qquad
+\sigma_j=\operatorname{clip}\left(
+\frac{R\omega_j-v_{xj}^t}{\max(3,v_{xj}^t)},-1,1\right).
+$$
+
+The denominators use the upstream hard guards, with velocity thresholds in m/s.
+They differ from the smooth denominator in the Python model.
+
+#### Linear tires, aerodynamics, and vertical loads
+
+The upstream [linear tire](https://github.com/TUMFTM/Open-Car-Dynamics/blob/94f8fb187fb0ed22bba1d809bd74f66d1ff75af4/lib/ocd_tire_models_cpp/src/linear.cpp),
+followed by the body's road scaling, gives per-wheel forces
+
+$$
+F_{xj}^t=\lambda_j C_s\sigma_jF_{zj},\qquad
+F_{yj}^t=\lambda_j C_\alpha\alpha_jF_{zj},\qquad M_{zj}^{tire}=0.
+$$
+
+Both tire forces are set to zero when $v_x^2<0.001$, $v_y^2<0.001$, and
+$\omega_j^2<0.001$ for all four wheels. These numerical thresholds are taken
+literally from upstream. There is no added force saturation or friction circle;
+longitudinal slip clipping does not create a combined-force grip limit.
+`nominal_friction` only normalizes OCD utilization diagnostics. The road's
+$\lambda_j$ scales both actual native tire forces.
+
+For zero wind, no other external loads, and the retained default lookup-table
+corrections, the configured aero model and quasi-static vertical loads are
+
+$$
+\begin{gathered}
+A_x=-\tfrac12\rho A C_dv_x|v_x|,\quad
+A_y=-\tfrac12\rho A C_dv_y|v_y|,\quad
+A_z=\tfrac12\rho A C_lv_x^2,\\
+W=mg-A_z,\qquad N_f=\frac{Wl_r-A_zd_a}{L_v},\qquad N_r=W-N_f,\\
+F_{zFL}=F_{zFR}=\max(0.001,N_f/2),\quad
+F_{zRL}=F_{zRR}=\max(0.001,N_r/2).
+\end{gathered}
+$$
+
+Here $d_a$ is the aerodynamic center offset from the center of gravity.
+Negative $C_l$ produces downforce. There is no suspension state or acceleration
+load-transfer equation. Summing front and rear tire-frame forces into
+$F_{xf}^t,F_{yf}^t,F_{xr}^t,F_{yr}^t$ gives
+
+$$
+\begin{aligned}
+F_x^b&=\cos\delta F_{xf}^t-\sin\delta F_{yf}^t+F_{xr}^t+A_x,\\
+F_y^b&=\sin\delta F_{xf}^t+\cos\delta F_{yf}^t+F_{yr}^t+A_y,\\
+M_z&=l_f(\sin\delta F_{xf}^t+\cos\delta F_{yf}^t)-l_rF_{yr}^t.
+\end{aligned}
+$$
+
+These totals enter the shared planar body equations above.
+
+#### Wheel rotation and hard-limited PT1 steering
+
+The native wheel-torque drivetrain includes the upstream low-speed extra
+inertia, rolling resistance, and one-sided wheel-speed derivative guard:
+
+$$
+\begin{gathered}
+J_{extra}=\max\left(0,15J_r\left(1-\frac{\sum_j\omega_j}{80}\right)\right),\\
+q_j=\frac{T_j-(F_{xj}^t+c_{rr}F_{zj})R}{J_{f/r}+J_{extra}},\qquad
+\dot\omega_j=\begin{cases}\max(0,q_j),&\omega_j<10^{-5},\\q_j,&\text{otherwise}.\end{cases}
+\end{gathered}
+$$
+
+$J_f,J_r$ are individual front/rear wheel inertias. The constants and forward
+rotation guard are preserved from TUM; this workflow is for forward driving.
+For the PT1 actuator,
+
+$$
+q_\delta=\operatorname{clip}\left(
+\frac{\delta_{cmd}-\delta_s}{T_\delta},-\dot\delta_{max},\dot\delta_{max}\right),\qquad
+\dot\delta_s=\begin{cases}
+\max(0,q_\delta),&\delta_s\le-\delta_{max},\\
+\min(0,q_\delta),&\delta_s\ge\delta_{max},\\
+q_\delta,&\text{otherwise}.
+\end{cases}
+$$
+
+The wheel and steering source comparisons are in the
+[OCD README](tracklab/driving_OCD/README.md). The angle guard acts on actuator
+position; the configured static offset is applied to the wheel angle afterward.
+
+### Parameters, prediction, and the shared speed plan
+
+These values come from the two [Python](tracklab/driving/config.py) and
+[OCD](tracklab/driving_OCD/config.py) configuration dataclasses. They are
+demonstration settings, rather than a measured tire/vehicle calibration.
+
+| Quantity | `driving` default | `driving_OCD` default |
+| --- | --- | --- |
+| $m,I_z,L_v,l_f$ | $800\;kg,1000\;kg\,m^2,3.2\;m,1.724\;m$ | Same |
+| $C_\alpha$ | $14\;rad^{-1}$, saturating axle law | $14\;rad^{-1}$, linear per-wheel law |
+| $C_s$ and $R$ | No wheel-slip model | $100$ and $0.3\;m$ |
+| $T_\delta,\dot\delta_{max},\delta_{max}$ | $0.12\;s,0.9\;rad/s,0.5\;rad$ | $0.06\;s,0.5\;rad/s,0.5\;rad$ |
+| Aerodynamics | $C_dA=0.75\;m^2$; longitudinal drag | $A=1\;m^2,C_d=1,C_l=-1.5,d_a=0$ |
+| Plant time step | RK4, $0.01\;s$ | Native DoPri, at most $0.0002\;s$ |
+| MPC prediction per $0.1\;s$ interval | Four RK4 substeps | One two-stage Radau IIA step |
+
+OCD explicitly replaces upstream tire defaults $C_\alpha=-0.1,C_s=3000$ with
+$14,100$ through parameter names; the compiled force equations remain original.
+The steering limit also changes from the upstream $0.30$ to $0.50\;rad$.
+The [OCD README](tracklab/driving_OCD/README.md#tire-equations-and-parameter-choices)
+records the reasons and remaining native defaults.
+
+For an ODE $\dot z=f(z,u)$, the baseline uses classical RK4 for both plant and
+prediction. OCD's predictor solves the following implicit Radau equations,
+holding the command and road multipliers fixed over prediction substep $h$:
+
+$$
+Z_1=z_n+h\left(\tfrac5{12}f(Z_1,u)-\tfrac1{12}f(Z_2,u)\right),\qquad
+z_{n+1}=Z_2=z_n+h\left(\tfrac34f(Z_1,u)+\tfrac14f(Z_2,u)\right).
+$$
+
+Actual OCD motion calls upstream `VehicleModel::step()` with small native
+substeps, with zero-duration output/cache synchronization at adapter boundaries.
+The upstream composition retains cached wheel outputs between internal stages.
+Continuous symbolic/native derivative agreement therefore does not mean the
+predictor and native finite steps are identical. The simulation samples axle
+friction every $0.01\;s$ logging interval and holds it during that interval.
+
+Both paths import the same [CurvatureSpeedPlan](tracklab/driving/planning.py).
+For a cyclic approximately $\pm1\;m$ maximum envelope $\bar\kappa_i$ of absolute
+road curvature, the initial speed cap and cyclic acceleration/braking limits are
+
+$$
+v_i^2=\min\left(v_{max}^2,\frac{a_{y,budget}}{\max(\bar\kappa_i,10^{-8})}\right),\quad
+v_{i+1}^2\le v_i^2+2a_{plan}\Delta s,\quad
+v_i^2\le v_{i+1}^2+2b_{plan}\Delta s.
+$$
+
+Defaults are $v_{max}=18\;m/s$, $a_{y,budget}=2\;m/s^2$,
+$a_{plan}=1.5\;m/s^2$, and $b_{plan}=2\;m/s^2$.
+This reference does not enforce a tire-force limit in the OCD plant. Both MPCs
+track position, heading, velocity, yaw rate, and steering while penalizing
+commands and command changes. Their approximate reference uses
+$\beta_{ref}=\arctan(l_r\kappa)-v^2\kappa/(gC_\alpha)$ and
+$\delta_{ref}=\operatorname{clip}(\arctan(L_v\kappa),-\delta_{max},\delta_{max})$;
+these are tracking targets, rather than exact equilibria of the complete models.
+The road corridor is constrained at prediction knots. Progress is updated by
+projecting the integrated position; projection does not reposition the car.
+
 ## Components
 
 For the native TUM single-track car with linear tires, use the separate
@@ -445,7 +827,7 @@ The closest-point projection is a grid-seeded local scalar minimization. It does
 
 Arc length and its inverse are numerical approximations; the inverse is PCHIP (C1). Therefore a quintic centerline alone does not make every `sample(s)` field C2 in s. Headings are principal angles and may wrap at +/-pi. Cyclic station labels may numerically represent a seam as zero or length minus a tiny rounding error.
 
-The adapter's native-named payload is a plain dictionary, not a native binding object. Native construction/copying/stepping and tire-force calculations are not performed. These functions are numerical NumPy/SciPy functions, not CasADi symbolic expressions. The older `X`-monotone graph-road MPC cannot use this closed course by a class-name substitution alone.
+The `RoadCarAdapter` in `tracklab/adapter.py` returns a plain dictionary for its native-named payload. That road adapter performs no native vehicle construction, stepping, or tire-force calculation; the separate `tracklab.driving_OCD` package performs those operations through its compiled bridge. Road adapter functions use NumPy/SciPy rather than CasADi symbolic expressions. The older `X`-monotone graph-road MPC cannot use this closed course by a class-name substitution alone.
 
 ## Attribution
 
