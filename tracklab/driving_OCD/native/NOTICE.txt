@@ -1,0 +1,14 @@
+Native model: TUMFTM/Open-Car-Dynamics
+Pinned commit: 94f8fb187fb0ed22bba1d809bd74f66d1ff75af4
+https://github.com/TUMFTM/Open-Car-Dynamics
+
+Upstream implementation files retain their copyright notices, including
+Copyright 2026 Simon Sagmeister, and are licensed under Apache-2.0.
+The license is reproduced in LICENSE-Open-Car-Dynamics.txt. Dependency revisions and
+model source hashes are recorded in upstream.json. Dependency licenses remain
+in the fetched upstream source tree.
+
+The local C interface, Python orchestration, controller and replay adaptation
+are additions. The symbolic predictor translates the selected upstream
+component equations; the actual plant uses the compiled upstream components.
+The road data retains the attribution and licenses at the repository root.

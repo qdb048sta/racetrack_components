@@ -1,0 +1,7 @@
+_build*/
+*.dll
+*.so
+*.dylib
+__pycache__/
+build_info.json
+*.new

@@ -1,0 +1,68 @@
+# Local Python environments and downloaded upstream source cache.
+/dev/
+/dev[0-9]*/
+/.venv*/
+/venv/
+/env/
+
+# Python bytecode and tool caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.log
+
+# Generated output directories, including custom runs using these conventions.
+result/
+results/
+output/
+outputs/
+*_results/
+*_output/
+/drive*_smoke/
+/drive*_test/
+
+# Generated NumPy archives and the documented course-map export.
+*.npz
+course_map.*
+
+# Fixed artifact names also cover arbitrary CLI --output directories.
+comparison.csv
+phase_details.csv
+noise_comparison.csv
+noise_details.csv
+norisring_interpolated_1m.csv
+trajectory.csv
+native_states.csv
+solver_log.csv
+speed_schedule.csv
+metadata.json
+metrics.json
+predictions.json
+solves.json
+vehicle_config.json
+driving_config.json
+native_parameters.json
+provenance.json
+independent_integration_check.json
+norisring_replay.html
+track_overview.png
+bend_comparison.png
+curvature_comparison.png
+trajectory.png
+speed.png
+angles.png
+tracking_error.png
+
+# Validation reports are reproducible local outputs; keep the Python scripts.
+/validation/*.json
+/validation/*.txt
+
+# Native libraries, compiler outputs and machine-specific build metadata.
+/tracklab/driving_OCD/native/_build*/
+/tracklab/driving_OCD/native/tracklab_ocd.*
+/tracklab/driving_OCD/native/build_info.json
