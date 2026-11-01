@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "racetrack-components"
+version = "0.1.0"
+description = "Periodic CSV road geometry for the shared racing simulation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.13"]
+license-files = [
+    "NOTICE.txt", "SOURCES.md", "licenses/*.txt",
+    "tracklab/driving_OCD/native/NOTICE.txt",
+    "tracklab/driving_OCD/native/LICENSE-*.txt",
+]
+
+[project.optional-dependencies]
+plots = ["matplotlib>=3.7"]
+driving = ["matplotlib>=3.7", "casadi==3.7.2"]
+
+[project.urls]
+Repository = "https://github.com/qdb048sta/racetrack_components"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["tracklab*"]
+
+[tool.setuptools.package-data]
+"tracklab.driving" = ["replay_template.html"]
+"tracklab.driving_OCD" = ["native/*.cpp", "native/CMakeLists.txt", "native/*.json", "native/*.txt"]

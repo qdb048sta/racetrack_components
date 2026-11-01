@@ -15,6 +15,9 @@ __pycache__/
 .coverage.*
 htmlcov/
 *.log
+*.egg-info/
+/build/
+/dist/
 
 # Generated output directories, including custom runs using these conventions.
 result/

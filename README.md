@@ -9,6 +9,12 @@ The reusable implementation lives in `tracklab/`.
 
 ## Start here
 
+The road API is installable with `python -m pip install -e .`; it needs only
+NumPy and SciPy. Plotting and this repository's demonstration controllers are
+optional extras (`.[plots]`, `.[driving]`). See the
+[package integration guide](docs/PACKAGE.md) to use the road model with an
+external simulator or controller.
+
 Follow the [step-by-step setup guide](docs/SETUP.md) to clone the project,
 create a Python 3.12 environment with uv, install dependencies, and run tests.
 It includes PowerShell, Git Bash, and Ubuntu/WSL instructions.
