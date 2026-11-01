@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from .evaluation import run_experiment
 from .export import json_clean
-from .plotting import plot_results
 
 def main() -> None:
     p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -18,5 +17,7 @@ def main() -> None:
     p.add_argument('--no-plots',action='store_true')
     args=p.parse_args()
     result=run_experiment(args.data,args.output,args.stride,args.smoothing_lambda,args.noise_std,args.noise_repeats)
-    if not args.no_plots:plot_results(args.data,args.output)
+    if not args.no_plots:
+        from .plotting import plot_results
+        plot_results(args.data,args.output)
     print(json.dumps(json_clean(result),indent=2))
