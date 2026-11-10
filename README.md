@@ -1,7 +1,7 @@
 # Modular Norisring road and driving lab
 
 This project provides a periodic race-course road model, an interpolation study,
-and two closed-loop driving simulations. Both cars use the same track data,
+and closed-loop driving simulations. The cars use the same track data,
 interpolation, road geometry, and curvature speed planner.
 
 The original `racetrack_interpolation_demo.py` is preserved in `original/`.
@@ -21,6 +21,7 @@ Run these commands from the repository root after setup:
 | Road/interpolation study | `python -m tracklab --output results` | Road CSV, spline data, comparison metrics and plots |
 | Python vehicle | `python run_drive.py --output drive_results` | `drive_results/norisring_replay.html` |
 | Native TUM OCD vehicle | `python run_drive_OCD.py --output drive_OCD_results` | `drive_OCD_results/norisring_replay.html` |
+| Native double-track and thesis-model comparison | `python run_thesis_comparison.py --scenario both` | Six normalized car models, recorded laps and prediction checks |
 
 Run native OCD with the Linux environment documented in the setup guide.
 Git Bash still uses Windows Python unless Linux Python is selected through WSL.
@@ -38,6 +39,9 @@ The HTML replays contain their data and open without a server.
 | [Native OCD model](tracklab/driving_OCD/MODEL.md) | Eleven-state car, linear tires, wheel dynamics, steering, parameters, and comparison with the Python car |
 | [Native OCD integration](tracklab/driving_OCD/INTEGRATION.md) | File-by-file explanation and paired upstream/local code excerpts |
 | [Native OCD validation](tracklab/driving_OCD/VALIDATION.md) | Recorded model comparison, numerical checks, and attribution |
+| [Full car/tire equations and source audit](documentation/model_comparison/README.md) | Native 33-state double-track, internal report, Lienkamp, Liniger, Gao, Beal, Sun and Liu; rendered equations and boundary conditions |
+| [Fresh thesis-model performance comparison](documentation/model_comparison/recorded_theses/RESULTS.md) | Twelve Norisring laps, identical-command forecasts, numerical refinement, timing and offline replay |
+| [Original five-model comparison](documentation/model_comparison/PLANAR_COMPARISON.md) | Native OCD versus planar MF, friction ellipse, Fiala and static-load variants |
 
 For the original refactor walkthrough, see [WALKTHROUGH.md](WALKTHROUGH.md).
 [SOURCE_BROWSER.html](SOURCE_BROWSER.html) and [SOURCE_MAP.json](SOURCE_MAP.json)

@@ -1,5 +1,11 @@
 # Native OCD double-track reference
 
+**Complete rendered equations:** [full vehicle/tire reference](../../documentation/model_comparison/README.md).
+That reference includes every spring, damper, antiroll, jacking, aerodynamic,
+drivetrain and steering closure, plus the supplied-source audit and the fresh
+six-model comparison. Its locally generated SVG equations also work in GitHub
+views where Markdown mathematics fails to render.
+
 This package compiles and runs the actual TUM Open-Car-Dynamics composition
 `WHEEL_TORQUE / PT1 / DOUBLE_TRACK / MF_SIMPLE / DEFAULT` at commit
 `94f8fb187fb0ed22bba1d809bd74f66d1ff75af4`. It has **33 continuous states**.
@@ -16,8 +22,9 @@ python -m unittest tracklab.comparison_native.test_native -v
 The build requires Linux/WSL or macOS, Git, a C++20 compiler, and Eigen3 headers.
 It can use the Eigen headers packaged with CasADi. ROS and CMake are unnecessary.
 Use `--source /path/to/Open-Car-Dynamics --no-fetch` with an existing checkout.
-Every upstream source and dependency is checked against the existing
-[pinned manifest](../driving_OCD/native/upstream.json). The native build writes
+Upstream sources and dependencies are checked against the existing
+[base manifest](../driving_OCD/native/upstream.json) and the
+[double-track/MF_SIMPLE manifest](native/upstream_double_track.json). The native build writes
 the compiler command, binary hash, adapter hash, and source provenance to the
 ignored `native/build_info.json`. The downloaded source and compiled binary are
 reproducible local build products.

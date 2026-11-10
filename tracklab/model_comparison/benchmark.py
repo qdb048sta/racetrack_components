@@ -93,12 +93,13 @@ def boundary_metrics(road, states, hints, logging_step_s=.02):
         "minimum_frenet_jacobian":float(np.min(1-q["curvature_1pm"]*e))}
 
 
-def run_one(name, cfg: Experiment, output, track=ROOT/"data/Norisring.csv", progress=True):
+def run_one(name, cfg: Experiment, output, track=ROOT/"data/Norisring.csv", progress=True,
+            plant_factory=None, label=None):
     output=Path(output)/cfg.name/name;output.mkdir(parents=True,exist_ok=True)
     road=PeriodicTrack(track,method="periodic_cubic")
     plan=CurvatureSpeedPlan(road,cfg)
     controller=CommonMPC(road,plan,cfg)
-    plant=make_plant(name,cfg)
+    plant=(plant_factory or make_plant)(name,cfg)
     q0=road.sample_geometry(0.)
     initial=np.r_[q0["center"],float(q0["heading_rad"]),cfg.initial_speed_mps,0.,0.,0.]
     z=np.asarray(plant.reset(initial),dtype=float)
@@ -158,7 +159,7 @@ def run_one(name, cfg: Experiment, output, track=ROOT/"data/Norisring.csv", prog
     fz=dyn["tire_force_vertical_N"]
     utilization=np.hypot(dyn["tire_force_longitudinal_N"],dyn["tire_force_lateral_N"])/np.maximum(fz,1e-6)
     speed=np.hypot(zs[:,3],zs[:,4]);beta=np.arctan2(zs[:,4],zs[:,3])
-    summaries={"model":name,"label":LABELS[name],"experiment":cfg.name,
+    summaries={"model":name,"label":label or LABELS.get(name,name),"experiment":cfg.name,
         "completed":completed,"failure":failure,"boundary_diagnostic_error":boundary_error,
         "simulation_end_time_s":float(ts[-1]),"lap_time_s":finish,
         "completed_laps":float(station[-1]/road.length),"reference_length_m":float(road.length),

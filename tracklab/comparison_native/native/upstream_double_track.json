@@ -1,0 +1,14 @@
+{
+  "commit": "94f8fb187fb0ed22bba1d809bd74f66d1ff75af4",
+  "composition": "WHEEL_TORQUE:PT1:DOUBLE_TRACK:MF_SIMPLE:DEFAULT",
+  "sha256_lf": {
+    "lib/ocd_tire_models_cpp/include/ocd_tire_models_cpp/mf_simple.hpp": "bf9d2e66f0c790ef1fedae6c7b3e4e25b28dffca73c8703f0e51c34518712f87",
+    "lib/ocd_tire_models_cpp/src/mf_simple.cpp": "5c4f896eb90187ec51c126b65940599bc167dbd0bb7340272cf1f4505b518aef",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/logging.hpp": "bd588476f59d634e2155b97d33ee94d771f9ae95d88ee38549ed3eb001be3967",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/states.hpp": "69192832a2e2f5498ca789454e590a930a598761f47772454dfc64e9a38994e6",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/vehicle_dynamics_equations.hpp": "58f225df63b6550cc5a7af8eb0a766c93c983d5ffb38d2655f2ecd201f3808da",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/vehicle_dynamics_equations_impl.hpp": "f6aeabf472d008140865fd65811e48cd2a9d83708f267fadf3a275e53029a992",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/vehicle_dynamics_model.hpp": "bc9b4d5f27b79b27764ea0018e6d7d62b8d667240d0058775bb8eca68e4935ed",
+    "lib/ocd_vehicle_dynamics_double_track_cpp/include/ocd_vehicle_dynamics_double_track_cpp/vehicle_dynamics_model_impl.hpp": "b603cc6368c0bc4891f4d18b845fc57b3c4b0a438d0641de68bc337d1cdc5cf9"
+  }
+}

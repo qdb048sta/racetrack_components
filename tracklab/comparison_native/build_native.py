@@ -22,6 +22,20 @@ NATIVE = HERE / "native"
 ROOT = HERE.parents[1]
 
 
+def verify_double_track_source(source):
+    """Extend the original single-track manifest to the actual selected plant."""
+    manifest = verify_source(source)
+    extension = json.loads((NATIVE / "upstream_double_track.json").read_text())
+    if extension["commit"] != manifest["commit"]:
+        raise RuntimeError("Native manifest commit mismatch")
+    for relative, digest in extension["sha256_lf"].items():
+        raw = (Path(source) / relative).read_bytes().replace(b"\r\n", b"\n")
+        if hashlib.sha256(raw).hexdigest() != digest:
+            raise RuntimeError(f"Pinned double-track source hash mismatch: {relative}")
+    return {**manifest, "model": extension["composition"],
+            "sha256_lf": {**manifest["sha256_lf"], **extension["sha256_lf"]}}
+
+
 def eigen_include(explicit=None):
     """Return the directory containing eigen3/Eigen/Dense."""
     candidates = [Path(explicit)] if explicit else []
@@ -46,7 +60,7 @@ def build_native(source=None, fetch=True, eigen=None, compiler=None):
     source = Path(source or ROOT / "dev/Open-Car-Dynamics").resolve()
     if fetch:
         fetch_source(source)
-    manifest = verify_source(source)
+    manifest = verify_double_track_source(source)
     compiler = compiler or os.environ.get("CXX") or shutil.which("g++") or shutil.which("c++")
     if not compiler:
         raise RuntimeError("A C++20 compiler is required (g++ or c++).")
