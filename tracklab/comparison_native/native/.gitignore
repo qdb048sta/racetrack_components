@@ -1,0 +1,5 @@
+*.so
+*.dll
+*.dylib
+_build*/
+build_info.json
